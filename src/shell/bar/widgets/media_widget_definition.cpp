@@ -73,6 +73,13 @@ const noctalia::bar::WidgetDefinition<MediaWidget::Options>& mediaWidgetDefiniti
           horizontalOnly(noctalia::bar::glyphPositionField<Options>(artworkAndTitle)),
           horizontalOnly(noctalia::bar::peekField<Options>(artworkAndTitle)),
           horizontalOnly(noctalia::bar::peekDelayField<Options>(artworkAndTitle)),
+          field<&Options::showControls>({
+              .key = "show_controls",
+              .presentation =
+                  settings::WidgetSettingPresentation{
+                      .horizontalBarOnly = true,
+                  },
+          }),
           field<&Options::minWidth>({
               .key = "min_length",
               .minValue = 0.0,
