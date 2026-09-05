@@ -31,6 +31,7 @@
 #include "scripting/plugin_runtime_context.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
+#include "shell/process/process_panel.h"
 #include "shell/control_center/control_center_panel.h"
 #include "shell/dialog_popup_settings.h"
 #include "shell/dialogs/color_picker_dialog.h"
@@ -634,6 +635,7 @@ void Application::initPanelManagerAndPanels() {
     });
   });
   m_panelManager.registerPanel("clipboard", std::move(clipboardPanel));
+  m_panelManager.registerPanel("process-list", std::make_unique<ProcessPanel>(m_processService.get()));
   syncClipboardService();
   m_panelManager.registerPanel("session", std::make_unique<SessionPanel>(&m_configService, m_sessionActionRunner));
   m_panelManager.registerPanel("test", std::make_unique<TestPanel>());
