@@ -14,6 +14,7 @@ class InputArea;
 class HttpClient;
 class Glyph;
 class Label;
+class Button;
 class MprisService;
 class Renderer;
 class ProgressBar;
@@ -41,6 +42,7 @@ public:
     bool hideArtist = false;
     bool artistFirst = false;
     bool showProgress = false;
+    bool showControls = false;
   };
 
   MediaWidget(MprisService* mpris, HttpClient* httpClient, wl_output* output, Options options);
@@ -55,11 +57,12 @@ private:
   void applyTitleScrollMode(bool titleVisible);
   void syncState(Renderer& renderer, const std::optional<MprisPlayerInfo>& active);
   void syncWidgetVisibility(bool showWidget);
+  [[nodiscard]] std::optional<MprisPlayerInfo> activePlayer() const;
   // Applies playback position to the fill and arms the update timer. Update-phase only: it decides
   // eligibility itself instead of reading the visibility that doLayout() applies afterwards.
   void syncProgress(const std::optional<MprisPlayerInfo>& active);
   [[nodiscard]] bool progressFillEligible(const std::optional<MprisPlayerInfo>& active) const noexcept;
-  [[nodiscard]] std::optional<MprisPlayerInfo> activePlayer() const;
+  void syncControls(bool artOnly, bool hasActive);
   [[nodiscard]] static std::string buildDisplayText(const MprisPlayerInfo& player, bool hideArtist, bool artistFirst);
 
   MprisService* m_mpris = nullptr;
@@ -80,15 +83,20 @@ private:
   bool m_isVertical = false;
   bool m_progressFillVisible = false;
   float m_artRotation = 0.0F;
+  bool m_showControls = false;
   InputArea* m_area = nullptr;
   Image* m_art = nullptr;
   Glyph* m_emptyGlyph = nullptr;
   Label* m_label = nullptr;
   ProgressBar* m_progressBar = nullptr;
+  Button* m_prevButton = nullptr;
+  Button* m_playPauseButton = nullptr;
+  Button* m_nextButton = nullptr;
 
   std::string m_lastText;
   std::string m_lastArtUrl;
   std::string m_lastPlaybackStatus;
+  bool m_hasActive = false;
   std::unordered_set<std::string> m_pendingArtDownloads;
   std::shared_ptr<void> m_aliveGuard = std::make_shared<int>(0);
   Timer m_progressTimer;
