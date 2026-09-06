@@ -1134,18 +1134,12 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
     if (stored.mediaClass == "Audio/Sink" || stored.mediaClass == "Audio/Source") {
       m_pendingDefaultAudioDevicePropsEnum = true;
       rebuildState();
-      // Late-appearing device nodes (e.g. Bluetooth earbuds) miss the one-shot sweep at
-      // mixer activation and would sit at volume 1.0 until the first external change.
-      // Proactively fetch their authoritative volume/mute from mixer-api if it is ready.
-      if (m_wpMixer != nullptr && m_wpMixer->ready()) {
-        m_wpMixer->refreshVolume(id);
-        // Schedule a second attempt on the next dispatch: the WirePlumber object manager
-        // may not have the new BlueZ node yet when we run synchronously inside the
-        // registry callback. The "changed" signal will backstop any remaining case.
-        // We trigger it via a pending prop enum that also pumps the mixer context.
-        if (stored.name.starts_with("bluez_") || stored.name.contains("bluez")) {
-          kLog.info("bluetooth node appeared id={} name=\"{}\" — fetching volume", id, stored.name);
-        }
+      // NOTE: no mixer-api fetch here. This runs on the PipeWire registry thread while
+      // WirePlumber mutates its node table on its own context; emitting "get-volume"
+      // across threads corrupts GVariant refcounts and segfaults (see 2026-09-06 BT crash).
+      // The mixer "changed" signal + activation sweep backstop late-appearing nodes.
+      if (stored.name.starts_with("bluez_") || stored.name.contains("bluez")) {
+        kLog.info("bluetooth node appeared id={} name=\"{}\"", id, stored.name);
       }
     } else if (stored.mediaClass != "Stream/Output/Audio") {
       rebuildState();
@@ -1845,11 +1839,7 @@ void PipeWireService::rebuildState() {
             m_state.defaultSinkId, next.defaultSinkId, sinkIt->name, isBluez ? " [bluetooth]" : "",
             sinkIt->volume * 100.0F, sinkIt->muted ? " [muted]" : ""
         );
-        // Proactively refresh the new default's volume in case the earlier node-appeared
-        // refresh raced with the object manager.
-        if (m_wpMixer != nullptr && m_wpMixer->ready()) {
-          m_wpMixer->refreshVolume(next.defaultSinkId);
-        }
+        // NOTE: no refreshVolume here — same cross-thread hazard as onRegistryGlobal.
       } else {
         kLog.info("default sink changed {} -> {} (unknown)", m_state.defaultSinkId, next.defaultSinkId);
       }
@@ -1859,12 +1849,10 @@ void PipeWireService::rebuildState() {
       if (srcIt != next.sources.end()) {
         kLog.info(
             "default source changed {} -> {} \"{}\" vol={:.0F}%{}",
-            m_state.defaultSourceId, next.defaultSourceId, srcIt->name, srcIt->volume * 100.0F,
+            m_state.defaultSourceId, next.defaultSourceId,             srcIt->name, srcIt->volume * 100.0F,
             srcIt->muted ? " [muted]" : ""
         );
-        if (m_wpMixer != nullptr && m_wpMixer->ready()) {
-          m_wpMixer->refreshVolume(next.defaultSourceId);
-        }
+        // NOTE: no refreshVolume here — same cross-thread hazard as onRegistryGlobal.
       }
     }
   }
