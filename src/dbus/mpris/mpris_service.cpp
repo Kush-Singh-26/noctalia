@@ -1889,6 +1889,15 @@ void MprisService::applyPlayerSnapshot(
   }
 
   if (existing == m_players.end()) {
+    // A properties fetch that started before a NameOwnerChanged removal can
+    // land after removePlayer() erased both maps (e.g. KDE Connect yanking
+    // its MPRIS name on link loss). Without this, the stale snapshot
+    // re-creates a ghost player that nothing will ever remove again.
+    // removePlayerCacheEntry() intentionally keeps the proxy so transient
+    // hydration failures can still recover through this path.
+    if (!m_playerProxies.contains(busName)) {
+      return;
+    }
     MprisPlayerInfo initial = info;
     if (!hadPositionSignal) {
       initial.positionUs = 0;
