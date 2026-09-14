@@ -156,6 +156,8 @@ private:
   [[nodiscard]] bool callPlayerMethod(const std::string& busName, const char* methodName);
   bool canInvoke(const MprisPlayerInfo& player, const char* methodName) const;
   void dismissPlayer(const std::string& busName);
+  void probeKdeconnectLink();
+  void evictKdeconnectPlayers(const char* reason);
 
   bool onPlayPausePlayer(const std::string& busName);
   bool onPlayPlayer(const std::string& busName);
@@ -239,6 +241,9 @@ private:
   std::function<void()> m_positionSampleCallback;
   int m_startupRediscoveryPassesRemaining = 4;
   Timer m_recoveryTimer;
+  Timer m_kdeconnectProbeTimer;
+  bool m_kdeconnectLinkDown = false;
+  int m_kdeconnectProbeFailures = 0;
   std::chrono::milliseconds m_recoveryBackoffMs{500};
   bool m_discoveryDrainScheduled = false;
 };
