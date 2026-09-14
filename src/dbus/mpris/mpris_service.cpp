@@ -20,6 +20,12 @@
 #include <string_view>
 #include <tuple>
 #include <unordered_set>
+#include <cerrno>
+#include <cstring>
+#include <fcntl.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 std::string joinedArtists(const std::vector<std::string>& artists) {
   if (artists.empty()) {
@@ -49,6 +55,57 @@ namespace {
   const sdbus::ObjectPath kNoctaliaMprisObjectPath{"/dev/noctalia/Mpris"};
 
   bool is_mpris_bus_name(std::string_view name) { return name.starts_with("org.mpris.MediaPlayer2."); }
+
+  constexpr auto kKdeconnectBusPrefix = std::string_view{"org.mpris.MediaPlayer2.kdeconnect"};
+  const sdbus::ServiceName kKdeconnectDaemonName{"org.kde.kdeconnect.daemon"};
+  const sdbus::ObjectPath kKdeconnectDaemonPath{"/modules/kdeconnect"};
+  constexpr auto kKdeconnectDaemonInterface = "org.kde.kdeconnect.daemon";
+  constexpr auto kKdeconnectDeviceInterface = "org.kde.kdeconnect.device";
+  constexpr auto kKdeconnectProbeInterval = std::chrono::milliseconds{3000};
+  constexpr auto kKdeconnectProbeService = "1716";
+  constexpr auto kKdeconnectProbeTimeout = std::chrono::milliseconds{250};
+  constexpr int kKdeconnectProbeFailThreshold = 2;
+
+  bool is_kdeconnect_bus_name(std::string_view name) { return name.starts_with(kKdeconnectBusPrefix); }
+
+  // ponytail: TCP SYN probe, kdeconnectd holds stale MPRIS exports for 10+ min after link
+  // loss with zero D-Bus signals; upgrade path: evict on daemon reachableChanged if it ever fires promptly.
+  bool tcp_host_reachable(const std::string& ip) {
+    addrinfo hints{};
+    hints.ai_socktype = SOCK_STREAM;
+    addrinfo* list = nullptr;
+    if (getaddrinfo(ip.c_str(), kKdeconnectProbeService, &hints, &list) != 0 || list == nullptr) {
+      return false;
+    }
+    bool reachable = false;
+    for (addrinfo* ai = list; ai != nullptr && !reachable; ai = ai->ai_next) {
+      const int fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+      if (fd < 0) {
+        continue;
+      }
+      const int flags = fcntl(fd, F_GETFL, 0);
+      fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+      if (connect(fd, ai->ai_addr, ai->ai_addrlen) == 0) {
+        reachable = true;
+      } else if (errno == EINPROGRESS) {
+        fd_set wfds;
+        FD_ZERO(&wfds);
+        FD_SET(fd, &wfds);
+        timeval tv{};
+        tv.tv_sec = kKdeconnectProbeTimeout.count() / 1000;
+        tv.tv_usec = (kKdeconnectProbeTimeout.count() % 1000) * 1000;
+        if (select(fd + 1, nullptr, &wfds, nullptr, &tv) > 0) {
+          int err = 0;
+          socklen_t len = sizeof(err);
+          getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len);
+          reachable = err == 0 || err == ECONNREFUSED;
+        }
+      }
+      close(fd);
+    }
+    freeaddrinfo(list);
+    return reachable;
+  }
 
   bool is_valid_loop_status(std::string_view loop_status) {
     return loop_status == "None" || loop_status == "Track" || loop_status == "Playlist";
@@ -360,6 +417,7 @@ MprisService::MprisService(SessionBus& bus)
   registerBusSignals();
   discoverPlayers();
   scheduleStartupRediscovery();
+  m_kdeconnectProbeTimer.startRepeating(kKdeconnectProbeInterval, [this] { probeKdeconnectLink(); });
 }
 
 const std::unordered_map<std::string, MprisPlayerInfo>& MprisService::players() const noexcept { return m_players; }
@@ -1623,6 +1681,10 @@ void MprisService::scheduleRecoveryDiscovery() {
 }
 
 void MprisService::addOrRefreshPlayer(const std::string& busName) {
+  if (is_kdeconnect_bus_name(busName) && m_kdeconnectLinkDown) {
+    // Wire probe says the phone is gone; the daemon re-exports these stale names for minutes.
+    return;
+  }
   auto [proxyIt, inserted] =
       m_playerProxies.emplace(busName, sdbus::createProxy(m_bus.connection(), sdbus::ServiceName{busName}, kMprisPath));
 
@@ -2205,6 +2267,87 @@ void MprisService::removePlayer(const std::string& busName) {
   // Name-owner churn can race with our own cache updates. Re-run discovery
   // on the next loop tick so transient gaps do not leave media UI empty.
   scheduleRecoveryDiscovery();
+}
+
+void MprisService::evictKdeconnectPlayers(const char* reason) {
+  kLog.info("evicting kdeconnect players reason={}", reason);
+  std::vector<std::string> doomed;
+  for (const auto& [name, _] : m_players) {
+    if (is_kdeconnect_bus_name(name)) {
+      doomed.push_back(name);
+    }
+  }
+  for (const auto& name : doomed) {
+    removePlayer(name);
+  }
+}
+
+void MprisService::probeKdeconnectLink() {
+  bool haveKdeconnectPlayers = false;
+  for (const auto& [name, _] : m_players) {
+    if (is_kdeconnect_bus_name(name)) {
+      haveKdeconnectPlayers = true;
+      break;
+    }
+  }
+  if (!haveKdeconnectPlayers && !m_kdeconnectLinkDown) {
+    return;
+  }
+
+  std::vector<std::string> linkIps;
+  try {
+    auto daemon = sdbus::createProxy(m_bus.connection(), kKdeconnectDaemonName, kKdeconnectDaemonPath);
+    std::vector<std::string> deviceIds;
+    daemon->callMethod("devices").onInterface(kKdeconnectDaemonInterface).storeResultsTo(deviceIds);
+    for (const auto& id : deviceIds) {
+      const sdbus::ObjectPath devicePath{std::string{"/modules/kdeconnect/devices/"} + id};
+      auto device = sdbus::createProxy(m_bus.connection(), kKdeconnectDaemonName, devicePath);
+      sdbus::Variant addresses;
+      device->callMethod("Get")
+          .onInterface(kPropertiesInterface)
+          .withArguments(std::string{kKdeconnectDeviceInterface}, std::string{"reachableAddresses"})
+          .storeResultsTo(addresses);
+      try {
+        for (const auto& ip : addresses.get<std::vector<std::string>>()) {
+          if (!ip.empty()) {
+            linkIps.push_back(ip);
+          }
+        }
+      } catch (const sdbus::Error&) {
+      }
+    }
+  } catch (const sdbus::Error& e) {
+    kLog.debug("kdeconnect link probe skipped err={}", e.what());
+    return;
+  }
+
+  if (linkIps.empty()) {
+    m_kdeconnectLinkDown = true;
+    if (haveKdeconnectPlayers) {
+      evictKdeconnectPlayers("no link addresses");
+    }
+    return;
+  }
+
+  for (const auto& ip : linkIps) {
+    if (tcp_host_reachable(ip)) {
+      m_kdeconnectProbeFailures = 0;
+      if (m_kdeconnectLinkDown) {
+        m_kdeconnectLinkDown = false;
+        kLog.info("kdeconnect link back, rediscovering players");
+        scheduleRecoveryDiscovery();
+      }
+      return;
+    }
+  }
+
+  if (++m_kdeconnectProbeFailures >= kKdeconnectProbeFailThreshold) {
+    m_kdeconnectProbeFailures = 0;
+    m_kdeconnectLinkDown = true;
+    if (haveKdeconnectPlayers) {
+      evictKdeconnectPlayers("link probe failed");
+    }
+  }
 }
 
 std::optional<std::string> MprisService::chooseActivePlayer() const {
