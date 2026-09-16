@@ -124,6 +124,7 @@ private:
   void handlePasswordEdited(const std::string& value);
   void tryAuthenticate();
   void handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result);
+  [[nodiscard]] std::string passwordPamService() const;
   void invalidatePendingAuthentication();
   void startFingerprint();
   void stopFingerprint();
