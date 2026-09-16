@@ -24,6 +24,7 @@
 #include <cmath>
 #include <string>
 #include <thread>
+#include <unistd.h>
 #include <utility>
 
 namespace {
@@ -1099,10 +1100,7 @@ void LockScreen::tryAuthenticate() {
   updatePromptOnSurfaces();
 
   const PamAuthenticator authenticator = m_authenticator;
-  // Authenticate against the "login" stack. If fingerprint is enabled, strip
-  // pam_fprintd from it: noctalia drives the reader itself over D-Bus and the
-  // two can't share the sensor. See docs/fingerprint.md.
-  const std::string pamService = "login";
+  const std::string pamService = passwordPamService();
   const std::string pamLanguage(i18n::Service::instance().language());
   const std::string pamStartFailure = i18n::tr("auth.pam.start-failed");
   std::thread([this, generation, password = std::move(password), authenticator, pamService, pamLanguage,
@@ -1113,8 +1111,21 @@ void LockScreen::tryAuthenticate() {
   }).detach();
 }
 
-void LockScreen::handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result) {
-  if (generation != m_authGeneration || !m_locked) {
+std::string LockScreen::passwordPamService() const {
+  // When Noctalia drives the fingerprint reader itself over D-Bus, keep PAM's
+  // pam_fprintd out of password auth: the two can't share the sensor and
+  // pam_fprintd burns its finger-wait timeout before the password is even tried.
+  // The "su" stack has no pam_fprintd; fall back to "login" when unavailable.
+  // ponytail: service switch instead of copying/stripping the stack (needs root-owned
+  // /etc/pam.d writes); revisit if a distro ships pam_fprintd in "su".
+  if (m_configService != nullptr && m_configService->config().lockscreen.fingerprint
+      && ::access("/etc/pam.d/su", R_OK) == 0) {
+    return "su";
+  }
+  return "login";
+}
+
+void LockScreen::handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result) {  if (generation != m_authGeneration || !m_locked) {
     return;
   }
 
