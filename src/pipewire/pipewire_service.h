@@ -221,6 +221,11 @@ public:
       std::uint32_t id, std::uint32_t paramId, std::uint32_t index, std::uint32_t next, const struct spa_pod* param
   );
   void parseDefaultNodes(const struct spa_dict* props);
+  // Re-binds the "default" metadata so the server re-emits current default.audio.sink/source.
+  // The property event stream has no read-back; without this a missed event leaves the tracked
+  // default stale until the next change (e.g. volume keys hitting speakers while BT is default).
+  void refreshDefaultMetadata();
+  void attachDefaultMetadata(struct pw_metadata* proxy);
 
   // Authoritative device volume/mute from WirePlumber's mixer-api (see setWirePlumberMixer).
   void onMixerVolumeChanged(std::uint32_t id, float volume, bool muted);
@@ -267,6 +272,7 @@ private:
   pw_core* m_core = nullptr;
   pw_registry* m_registry = nullptr;
   struct pw_metadata* m_defaultMetadata = nullptr;
+  std::uint32_t m_defaultMetadataId = 0;
 
   // Listener hooks (must outlive the objects they listen to)
   spa_hook* m_coreListener = nullptr;

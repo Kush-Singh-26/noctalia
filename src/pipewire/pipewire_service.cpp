@@ -985,6 +985,45 @@ const AudioNode* PipeWireService::defaultSource() const noexcept {
 
 std::string audioDeviceLabel(const AudioNode& node) { return !node.description.empty() ? node.description : node.name; }
 
+void PipeWireService::attachDefaultMetadata(struct pw_metadata* proxy) {
+  m_defaultMetadata = proxy;
+  auto* md = new MetadataData{this, proxy, new spa_hook{}};
+  spa_zero(*md->listener);
+  pw_metadata_add_listener(proxy, md->listener, &kMetadataEvents, md);
+  pw_core_sync(md->service->coreHandle(), PW_ID_CORE, 0);
+  m_metadataCleanups.emplace_back([md]() {
+    if (md->listener != nullptr) {
+      spa_hook_remove(md->listener);
+      delete md->listener;
+    }
+    if (md->proxy != nullptr) {
+      pw_proxy_destroy(reinterpret_cast<pw_proxy*>(md->proxy));
+    }
+    if (md->service != nullptr && md->service->m_defaultMetadata == md->proxy) {
+      md->service->m_defaultMetadata = nullptr;
+    }
+    delete md;
+  });
+}
+
+void PipeWireService::refreshDefaultMetadata() {
+  if (m_registry == nullptr || m_defaultMetadataId == 0) {
+    return;
+  }
+  for (auto& cleanup : m_metadataCleanups) {
+    cleanup();
+  }
+  m_metadataCleanups.clear();
+  m_defaultMetadata = nullptr;
+  auto* proxy = static_cast<pw_metadata*>(pw_registry_bind(
+      m_registry, m_defaultMetadataId, PW_TYPE_INTERFACE_Metadata, PW_VERSION_METADATA, sizeof(void*)));
+  if (proxy != nullptr) {
+    attachDefaultMetadata(proxy);
+  } else {
+    m_defaultMetadataId = 0;
+  }
+}
+
 void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::uint32_t, const spa_dict* props) {
   if (std::strcmp(type, PW_TYPE_INTERFACE_Client) == 0) {
     ClientData client;
@@ -1134,6 +1173,10 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
     if (stored.mediaClass == "Audio/Sink" || stored.mediaClass == "Audio/Source") {
       m_pendingDefaultAudioDevicePropsEnum = true;
       rebuildState();
+      // Reconcile the tracked default against the server: a missed default.audio.sink/source
+      // event would otherwise stick (volume keys hitting the old device). Re-binding re-emits
+      // current values; parseDefaultNodes no-ops when nothing changed.
+      refreshDefaultMetadata();
       // NOTE: no mixer-api fetch here. This runs on the PipeWire registry thread while
       // WirePlumber mutates its node table on its own context; emitting "get-volume"
       // across threads corrupts GVariant refcounts and segfaults (see 2026-09-06 BT crash).
@@ -1151,33 +1194,31 @@ void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::
   if (std::strcmp(type, PW_TYPE_INTERFACE_Metadata) == 0) {
     std::string name = dictGet(props, PW_KEY_METADATA_NAME);
     if (name == "default") {
+      if (id == m_defaultMetadataId) {
+        return;
+      }
       auto* proxy =
           static_cast<pw_metadata*>(pw_registry_bind(m_registry, id, type, PW_VERSION_METADATA, sizeof(void*)));
       if (proxy != nullptr) {
-        m_defaultMetadata = proxy;
-        auto* md = new MetadataData{this, proxy, new spa_hook{}};
-        spa_zero(*md->listener);
-        pw_metadata_add_listener(proxy, md->listener, &kMetadataEvents, md);
-        pw_core_sync(md->service->coreHandle(), PW_ID_CORE, 0);
-        m_metadataCleanups.emplace_back([md]() {
-          if (md->listener != nullptr) {
-            spa_hook_remove(md->listener);
-            delete md->listener;
-          }
-          if (md->proxy != nullptr) {
-            pw_proxy_destroy(reinterpret_cast<pw_proxy*>(md->proxy));
-          }
-          if (md->service != nullptr && md->service->m_defaultMetadata == md->proxy) {
-            md->service->m_defaultMetadata = nullptr;
-          }
-          delete md;
-        });
+        m_defaultMetadataId = id;
+        attachDefaultMetadata(proxy);
       }
     }
   }
 }
 
 void PipeWireService::onRegistryGlobalRemove(std::uint32_t id) {
+  if (id == m_defaultMetadataId) {
+    // The "default" metadata itself went away (server restart/recreate). Drop the dead proxy;
+    // the add path re-binds when it reappears. Without this we keep a silent dead listener.
+    for (auto& cleanup : m_metadataCleanups) {
+      cleanup();
+    }
+    m_metadataCleanups.clear();
+    m_defaultMetadata = nullptr;
+    m_defaultMetadataId = 0;
+    return;
+  }
   if (auto it = m_clients.find(id); it != m_clients.end()) {
     if (it->second.listener != nullptr) {
       spa_hook_remove(it->second.listener);
@@ -1226,6 +1267,7 @@ void PipeWireService::onRegistryGlobalRemove(std::uint32_t id) {
   }
 
   auto& nd = it->second;
+  const bool wasAudioDevice = nd->mediaClass == "Audio/Sink" || nd->mediaClass == "Audio/Source";
   if (nd->listener != nullptr) {
     spa_hook_remove(nd->listener);
     delete nd->listener;
@@ -1237,6 +1279,9 @@ void PipeWireService::onRegistryGlobalRemove(std::uint32_t id) {
   // Node ids are recycled, so a route left in the metadata must not carry over to the next node.
   m_metadataTargetObjects.erase(id);
   rebuildState();
+  if (wasAudioDevice) {
+    refreshDefaultMetadata();
+  }
 }
 
 void PipeWireService::onNodeInfo(std::uint32_t id, const pw_node_info* info) {
