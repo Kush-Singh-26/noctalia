@@ -1112,12 +1112,17 @@ void LockScreen::tryAuthenticate() {
 }
 
 std::string LockScreen::passwordPamService() const {
-  // When Noctalia drives the fingerprint reader itself over D-Bus, keep PAM's
-  // pam_fprintd out of password auth: the two can't share the sensor and
-  // pam_fprintd burns its finger-wait timeout before the password is even tried.
-  // The "su" stack has no pam_fprintd; fall back to "login" when unavailable.
-  // ponytail: service switch instead of copying/stripping the stack (needs root-owned
-  // /etc/pam.d writes); revisit if a distro ships pam_fprintd in "su".
+  // No stock PAM service is fingerprint-free on Fedora: login, su and su-l all
+  // funnel into system-auth, which runs pam_fprintd first. That module stalls
+  // every password unlock on its finger-wait timeout while contending with the
+  // reader Noctalia itself drives over D-Bus, so prefer the dedicated
+  // password-only /etc/pam.d/noctalia service when installed.
+  if (::access("/etc/pam.d/noctalia", R_OK) == 0) {
+    return "noctalia";
+  }
+  // Fall back to the su stack (no pam_fprintd on layouts where su avoids
+  // system-auth), then login. Either may still stall where pam_fprintd is
+  // in the chain; installing the service file above is the real fix.
   if (m_configService != nullptr && m_configService->config().lockscreen.fingerprint
       && ::access("/etc/pam.d/su", R_OK) == 0) {
     return "su";
