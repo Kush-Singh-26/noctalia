@@ -18,6 +18,10 @@
 
 namespace {
 
+  // ponytail: faux slant via rotation (no Node shear support); true parallelograms
+  // need a skew term in localTransform + hit-test, add when this looks too cheap.
+  constexpr float kStripSlantRad = -0.12F;
+
   bool parseColorWallpaperPath(std::string_view path, Color& out) {
     constexpr std::string_view kPrefix = "color:";
     if (!path.starts_with(kPrefix)) {
@@ -158,6 +162,7 @@ WallpaperTile::WallpaperTile(float cellWidth, float cellHeight, float contentSca
   );
 
   applyStarVisualState();
+  m_thumbHost->setRotation(kStripSlantRad);
 
   m_thumbHost->addChild(
       ui::button({
@@ -598,6 +603,8 @@ void WallpaperTile::applyVisualState() {
   setOpacity(m_missingFile ? 0.45F : 1.0F);
   setZIndex((m_selected || m_current) ? 2 : (m_hoveredVisual ? 1 : 0));
   animateThumbScale(activeThumbScale(m_selected, m_current, m_hoveredVisual));
+  // Active strip pops upright; resting strips keep the slant.
+  m_thumbHost->setRotation(active ? 0.0F : kStripSlantRad);
   m_thumb->setTint(active ? rgba(1.0F, 1.0F, 1.0F, 1.0F) : rgba(0.5F, 0.5F, 0.5F, 1.0F));
 
   auto outlineWidth = Style::borderWidth;

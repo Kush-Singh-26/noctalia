@@ -12,6 +12,8 @@ WallpaperWidget::WallpaperWidget(wl_output* /*output*/, Options options)
       m_customImage(widget_custom_image::fromConfig(options.customImage, options.customImageColorize)) {}
 
 void WallpaperWidget::create() {
+  // Click opens the picker via the default Left gesture (panel-toggle
+  // wallpaper in widget_gesture_defaults.cpp), same as launcher/clipboard.
   auto area = ui::inputArea({});
 
   if (m_customImage.enabled()) {

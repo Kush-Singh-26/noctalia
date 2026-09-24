@@ -18,6 +18,7 @@
 #include "theme/community_palettes.h"
 #include "theme/custom_palettes.h"
 #include "theme/theme_service.h"
+#include "time/time_format.h"
 #include "ui/builders.h"
 #include "ui/dialogs/color_picker_dialog.h"
 #include "ui/palette.h"
@@ -51,11 +52,13 @@ namespace {
 
   constexpr Logger kLog("wp-panel");
   constexpr auto kFilterDebounceInterval = std::chrono::milliseconds(120);
-  constexpr float kMinTileWidth = 180.0F;
+  constexpr float kMinTileWidth = 150.0F;
+  constexpr float kPreviewHeight = 232.0F;
+  constexpr int kPreviewTargetPx = 960;
   constexpr float kMonitorSelectMinWidth = 136.0F;
   constexpr float kFavoriteSelectMinWidth = 168.0F;
   constexpr float kFavoritesMetaRowGap = Style::spaceSm;
-  constexpr float kTileAspect = 0.78F; // height / width, leaves room for label under widescreen thumb
+  constexpr float kTileAspect = 1.02F; // tall strips for the slanted filmstrip look
 
   [[nodiscard]] std::size_t themeModeSegmentIndex(ThemeMode mode) {
     switch (mode) {
@@ -714,6 +717,51 @@ void WallpaperPanel::create() {
 
   root->addChild(std::move(favoritesOptions));
 
+  // ── Hero preview: hovered/selected tile shows large, with a clock ────────
+  {
+    auto previewBox = ui::box({
+        .out = &m_previewBox,
+        .height = kPreviewHeight * scale,
+        .configure = [scale](Box& box) {
+          box.setRadius(Style::scaledRadiusLg(scale));
+          box.setClipChildren(true);
+          box.setFill(colorSpecFromRole(ColorRole::SurfaceVariant));
+        },
+    });
+    previewBox->addChild(ui::image({
+        .out = &m_previewImage,
+        .fit = ImageFit::Cover,
+        .radius = Style::scaledRadiusLg(scale),
+        .participatesInLayout = false,
+    }));
+    const ColorSpec overlayText = fixedColorSpec(rgba(1.0F, 1.0F, 1.0F, 1.0F));
+    const ColorSpec overlayShadow = fixedColorSpec(rgba(0.0F, 0.0F, 0.0F, 0.6F));
+    previewBox->addChild(ui::label({
+        .out = &m_previewClock,
+        .fontSize = Style::fontSizeTitle * scale * 1.7F,
+        .fontWeight = FontWeight::Bold,
+        .color = overlayText,
+        .participatesInLayout = false,
+        .configure = [scale, overlayShadow](Label& label) { label.setShadow(overlayShadow, 0.0F, 1.0F * scale); },
+    }));
+    previewBox->addChild(ui::label({
+        .out = &m_previewDate,
+        .fontSize = Style::fontSizeBody * scale,
+        .color = overlayText,
+        .participatesInLayout = false,
+        .configure = [scale, overlayShadow](Label& label) { label.setShadow(overlayShadow, 0.0F, 1.0F * scale); },
+    }));
+    previewBox->addChild(ui::label({
+        .out = &m_previewName,
+        .fontSize = Style::fontSizeCaption * scale,
+        .color = overlayText,
+        .maxLines = 1,
+        .participatesInLayout = false,
+        .configure = [scale, overlayShadow](Label& label) { label.setShadow(overlayShadow, 0.0F, 1.0F * scale); },
+    }));
+    root->addChild(std::move(previewBox));
+  }
+
   // ── Body: virtualized scrolling grid ──────────────────────────────────
   m_adapter = std::make_unique<WallpaperGridAdapter>(scale);
   m_adapter->setThumbnailService(m_thumbnails);
@@ -738,8 +786,8 @@ void WallpaperPanel::create() {
           .contentScale = scale,
           .minCellWidth = kMinTileWidth * scale,
           .squareCells = false,
-          .columnGap = Style::spaceMd * scale,
-          .rowGap = Style::spaceMd * scale,
+          .columnGap = Style::spaceSm * scale,
+          .rowGap = Style::spaceSm * scale,
           .overscanRows = 2,
           .itemCursorShape = WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER,
           .adapter = m_adapter.get(),
@@ -755,8 +803,20 @@ void WallpaperPanel::create() {
                   m_selectedVisibleIndex = kNoVisibleSelection;
                 }
                 syncThemeControls();
+                refreshPreview();
               },
-          .configure = [](VirtualGridView& grid) { grid.setFillWidth(true); },
+          .configure = [this](VirtualGridView& grid) {
+            grid.setFillWidth(true);
+            grid.setOnHoverChanged([this](std::optional<std::size_t> idx) {
+              if (idx.has_value() && *idx < m_visibleEntries.size()) {
+                m_hoveredVisibleIndex = idx;
+              } else {
+                m_hoveredVisibleIndex.reset();
+              }
+              refreshPreview();
+              PanelManager::instance().refresh();
+            });
+          },
       })
   );
 
@@ -845,6 +905,8 @@ void WallpaperPanel::doLayout(Renderer& renderer, float width, float height) {
 
   m_rootLayout->setSize(width, height);
   m_rootLayout->layout(renderer);
+  syncPreviewTexture(renderer);
+  layoutPreviewOverlays(renderer);
   m_dirty = false;
 }
 
@@ -861,6 +923,9 @@ void WallpaperPanel::doUpdate(Renderer& renderer) {
       m_adapter->refreshVisibleThumbnails(renderer);
     }
   }
+
+  syncPreviewTexture(renderer);
+  tickPreviewClock();
 }
 
 void WallpaperPanel::onPanelCardOpacityChanged(float opacity) {
@@ -897,7 +962,11 @@ void WallpaperPanel::onOpen(std::string_view /*context*/) {
   reseedRandomSort();
   refreshVisibleEntries();
   resetSelection();
+  m_hoveredVisibleIndex.reset();
+  m_lastClockMinute.clear();
+  tickPreviewClock();
   rebindGrid();
+  refreshPreview();
   syncBrowseChrome();
   syncBackButton();
   m_dirty = true;
@@ -938,7 +1007,17 @@ void WallpaperPanel::onClose() {
   m_grid = nullptr;
   m_loadingBox = nullptr;
   m_spinner = nullptr;
+  m_previewBox = nullptr;
+  m_previewImage = nullptr;
+  m_previewClock = nullptr;
+  m_previewDate = nullptr;
+  m_previewName = nullptr;
   m_scanPending = false;
+  releasePreview();
+  m_previewPath.clear();
+  m_previewShownPath.clear();
+  m_lastClockMinute.clear();
+  m_hoveredVisibleIndex.reset();
 
   clearReleasedRoot();
   m_lastWidth = 0.0F;
@@ -1402,11 +1481,132 @@ void WallpaperPanel::rebindGrid(bool resetScroll) {
   } else {
     m_grid->setSelectedIndex(m_selectedVisibleIndex);
   }
+  refreshPreview();
 }
 
 void WallpaperPanel::resetSelection() { m_selectedVisibleIndex = kNoVisibleSelection; }
 
 bool WallpaperPanel::hasVisibleSelection() const { return m_selectedVisibleIndex < m_visibleEntries.size(); }
+
+void WallpaperPanel::refreshPreview() {
+  if (m_rootLayout == nullptr) {
+    return;
+  }
+  const auto entryPath = [&](std::size_t idx) -> std::string {
+    if (idx >= m_visibleEntries.size() || m_visibleEntries[idx].isDir) {
+      return {};
+    }
+    return m_visibleEntries[idx].absPath.string();
+  };
+  std::string path;
+  if (m_hoveredVisibleIndex.has_value()) {
+    path = entryPath(*m_hoveredVisibleIndex);
+  }
+  if (path.empty() && hasVisibleSelection()) {
+    path = entryPath(m_selectedVisibleIndex);
+  }
+  if (path.empty()) {
+    path = currentWallpaperPathForSelection();
+  }
+  updatePreviewPath(path);
+}
+
+void WallpaperPanel::updatePreviewPath(const std::string& path) {
+  if (path == m_previewPath) {
+    return;
+  }
+  releasePreview();
+  m_previewPath = path;
+  Color colorFill;
+  const bool isColor = parseColorWallpaperPath(path, colorFill);
+  if (m_previewBox != nullptr) {
+    m_previewBox->setFill(
+        isColor ? fixedColorSpec(colorFill) : colorSpecFromRole(ColorRole::SurfaceVariant)
+    );
+  }
+  if (m_previewName != nullptr) {
+    m_previewName->setText(path.empty() ? std::string{} : displayNameForWallpaperPath(path));
+  }
+  if (!path.empty() && !isColor && m_thumbnails != nullptr) {
+    (void)m_thumbnails->acquire(path, kPreviewTargetPx);
+    m_previewTargetPx = kPreviewTargetPx;
+  }
+}
+
+void WallpaperPanel::releasePreview() {
+  if (!m_previewPath.empty() && m_thumbnails != nullptr && m_previewTargetPx > 0) {
+    m_thumbnails->release(m_previewPath, m_previewTargetPx);
+  }
+  m_previewTargetPx = 0;
+}
+
+void WallpaperPanel::syncPreviewTexture(Renderer& renderer) {
+  if (m_previewImage == nullptr) {
+    return;
+  }
+  Color colorFill;
+  if (m_previewPath.empty() || parseColorWallpaperPath(m_previewPath, colorFill)) {
+    if (m_previewShownPath != m_previewPath) {
+      m_previewImage->clear(renderer);
+      m_previewImage->setVisible(false);
+      m_previewShownPath = m_previewPath;
+    }
+    return;
+  }
+  if (m_thumbnails == nullptr || m_previewShownPath == m_previewPath) {
+    return;
+  }
+  // Decode may still be pending; keep the previous image until it arrives.
+  const TextureHandle handle = m_thumbnails->peek(m_previewPath, m_previewTargetPx);
+  if (handle.id != 0) {
+    m_previewImage->setExternalTexture(renderer, handle);
+    m_previewImage->setVisible(true);
+    m_previewShownPath = m_previewPath;
+  }
+}
+
+void WallpaperPanel::layoutPreviewOverlays(Renderer& renderer) {
+  if (m_previewBox == nullptr || m_previewImage == nullptr) {
+    return;
+  }
+  const float scale = contentScale();
+  const float w = m_previewBox->width();
+  const float h = m_previewBox->height();
+  if (w <= 0.0F || h <= 0.0F) {
+    return;
+  }
+  const float pad = Style::spaceMd * scale;
+  m_previewImage->setPosition(0.0F, 0.0F);
+  m_previewImage->setFrameSize(w, h);
+  m_previewImage->layout(renderer);
+  // Left-anchored on purpose: text changes never need repositioning.
+  if (m_previewClock != nullptr) {
+    m_previewClock->layout(renderer);
+    m_previewClock->setPosition(pad, pad);
+  }
+  if (m_previewDate != nullptr) {
+    m_previewDate->layout(renderer);
+    m_previewDate->setPosition(pad, pad + Style::fontSizeTitle * scale * 1.7F * 1.25F);
+  }
+  if (m_previewName != nullptr) {
+    m_previewName->setMaxWidth(std::max(0.0F, w - pad * 2.0F));
+    m_previewName->layout(renderer);
+    m_previewName->setPosition(pad, h - pad - Style::fontSizeCaption * scale * 1.4F);
+  }
+}
+
+void WallpaperPanel::tickPreviewClock() {
+  if (m_previewClock == nullptr || m_previewDate == nullptr) {
+    return;
+  }
+  const std::string minute = formatLocalTime("{:%H:%M}");
+  if (minute == m_lastClockMinute) {
+    return;
+  }
+  m_lastClockMinute = minute;
+  m_previewClock->setText(minute);
+  m_previewDate->setText(formatLocalTime("{:%a %m/%d}"));
+}
 
 void WallpaperPanel::toggleFavoriteForPath(const std::string& path) {
   if (m_config == nullptr || path.empty()) {
@@ -1494,6 +1694,7 @@ void WallpaperPanel::selectVisibleIndex(std::size_t index) {
     m_grid->scrollToIndex(index);
   }
   syncThemeControls();
+  refreshPreview();
 
   m_dirty = true;
   PanelManager::instance().refresh();

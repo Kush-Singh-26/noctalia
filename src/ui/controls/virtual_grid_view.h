@@ -128,6 +128,8 @@ public:
   [[nodiscard]] std::size_t layoutColumnCount() const noexcept { return m_layoutColumns; }
 
   void setOnSelectionChanged(std::function<void(std::optional<std::size_t>)> callback);
+  // Fires only when the hovered item index changes (nullopt = nothing hovered).
+  void setOnHoverChanged(std::function<void(std::optional<std::size_t>)> callback);
 
   [[nodiscard]] ScrollView& scrollView() noexcept { return *m_scroll; }
 
@@ -181,6 +183,7 @@ private:
   std::optional<std::size_t> m_hoveredIndex;
   std::optional<std::size_t> m_hoveredOverlayIndex;
   std::function<void(std::optional<std::size_t>)> m_onSelectionChanged;
+  std::function<void(std::optional<std::size_t>)> m_onHoverChanged;
 
   // Most recent layout snapshot — used by hit-testing and scrollToIndex
   // without rerunning measurement.
