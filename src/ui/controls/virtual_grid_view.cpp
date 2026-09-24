@@ -234,6 +234,10 @@ void VirtualGridView::setOnSelectionChanged(std::function<void(std::optional<std
   m_onSelectionChanged = std::move(callback);
 }
 
+void VirtualGridView::setOnHoverChanged(std::function<void(std::optional<std::size_t>)> callback) {
+  m_onHoverChanged = std::move(callback);
+}
+
 std::size_t VirtualGridView::pageItemStride() const noexcept {
   if (m_scroll == nullptr || m_layoutColumns == 0 || m_cellHeightResolved <= 0.0F) {
     return 1;
@@ -513,8 +517,12 @@ void VirtualGridView::onScrollChanged(float /*offset*/) {
   if (m_hoveredOverlayIndex.has_value()) {
     setOverlayHoveredForIndex(*m_hoveredOverlayIndex, false);
   }
+  const bool hadHover = m_hoveredIndex.has_value();
   m_hoveredIndex.reset();
   m_hoveredOverlayIndex.reset();
+  if (hadHover && m_onHoverChanged) {
+    m_onHoverChanged(std::nullopt);
+  }
   markLayoutDirty();
 }
 
@@ -563,8 +571,12 @@ void VirtualGridView::onPointerMotion(float localX, float localY) {
     setOverlayHoveredForIndex(*overlayIdx, true);
   }
 
+  const bool hoverChanged = idx != m_hoveredIndex;
   m_hoveredIndex = idx;
   m_hoveredOverlayIndex = overlayIdx;
+  if (hoverChanged && m_onHoverChanged) {
+    m_onHoverChanged(m_hoveredIndex);
+  }
   markLayoutDirty();
 }
 
@@ -578,6 +590,9 @@ void VirtualGridView::onPointerLeave() {
   }
   m_hoveredIndex.reset();
   m_hoveredOverlayIndex.reset();
+  if (m_onHoverChanged) {
+    m_onHoverChanged(std::nullopt);
+  }
   markLayoutDirty();
 }
 

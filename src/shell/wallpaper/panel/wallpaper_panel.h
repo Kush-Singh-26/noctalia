@@ -17,8 +17,10 @@
 #include <vector>
 
 class Button;
+class Box;
 class ConfigService;
 class Flex;
+class Image;
 class Input;
 class Label;
 class Segmented;
@@ -55,7 +57,7 @@ public:
   [[nodiscard]] bool handleGlobalKey(std::uint32_t sym, std::uint32_t modifiers, bool pressed, bool preedit) override;
 
   [[nodiscard]] float preferredWidth() const override { return scaled(980.0F); }
-  [[nodiscard]] float preferredHeight() const override { return scaled(700.0F); }
+  [[nodiscard]] float preferredHeight() const override { return scaled(800.0F); }
   [[nodiscard]] PanelPlacement panelPlacement() const noexcept override;
   [[nodiscard]] LayerShellKeyboard keyboardMode() const override { return LayerShellKeyboard::Exclusive; }
   [[nodiscard]] InputArea* initialFocusArea() const override;
@@ -109,6 +111,13 @@ private:
   void rebindGrid(bool resetScroll = false);
   void resetSelection();
   [[nodiscard]] bool hasVisibleSelection() const;
+  // Hero preview: hovered > keyboard-selected > current wallpaper.
+  void refreshPreview();
+  void updatePreviewPath(const std::string& path);
+  void releasePreview();
+  void syncPreviewTexture(Renderer& renderer);
+  void layoutPreviewOverlays(Renderer& renderer);
+  void tickPreviewClock();
   void selectVisibleIndex(std::size_t index);
   void activateSelectedEntry();
   [[nodiscard]] bool handleKeyEvent(std::uint32_t sym, std::uint32_t modifiers);
@@ -146,6 +155,17 @@ private:
   VirtualGridView* m_grid = nullptr;
   Flex* m_loadingBox = nullptr;
   Spinner* m_spinner = nullptr;
+  // Hero preview (large backdrop + clock, like a lockscreen peek).
+  Box* m_previewBox = nullptr;
+  Image* m_previewImage = nullptr;
+  Label* m_previewClock = nullptr;
+  Label* m_previewDate = nullptr;
+  Label* m_previewName = nullptr;
+  std::string m_previewPath;
+  std::string m_previewShownPath;
+  int m_previewTargetPx = 0;
+  std::string m_lastClockMinute;
+  std::optional<std::size_t> m_hoveredVisibleIndex;
   std::unique_ptr<WallpaperGridAdapter> m_adapter;
 
   std::vector<MonitorChoice> m_monitorChoices;
