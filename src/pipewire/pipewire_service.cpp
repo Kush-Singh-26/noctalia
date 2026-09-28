@@ -236,6 +236,9 @@ namespace {
       }
       const std::string name = extractDefaultMetadataNodeName(std::string_view(value));
       if (!name.empty()) {
+        // Live keys only. default.configured.audio.sink/source is a persisted preference that can
+        // name an absent device (e.g. disconnected BT earbuds); folding it in drops the tracked
+        // default to 0 and every re-emit flaps 0 -> speakers with a phantom route-change OSD.
         spa_dict_item items[1];
         items[0] = SPA_DICT_ITEM_INIT(key, name.c_str());
         spa_dict dict = SPA_DICT_INIT(items, 1);
@@ -1001,6 +1004,9 @@ void PipeWireService::onCoreDone(std::uint32_t id, int sequence) {
     enumDefaultAudioDeviceParams();
     announceConnection();
   }
+  if (id == PW_ID_CORE && sequence == m_reconcileSyncSequence) {
+    m_reconcileSyncPending = false;
+  }
 }
 
 void PipeWireService::announceConnection() {
@@ -1187,6 +1193,22 @@ void PipeWireService::refreshDefaultMetadata() {
   } else {
     m_defaultMetadataId = 0;
   }
+}
+
+void PipeWireService::syncDefaultNodes() {
+  if (m_core == nullptr || m_loop == nullptr) {
+    return;
+  }
+  // ponytail: blocking round-trip instead of a deferred-action queue; the local daemon answers in
+  // ~ms and the 50ms cap bounds the worst case on a wedged server (act on last-known then).
+  refreshDefaultMetadata();
+  m_reconcileSyncPending = true;
+  m_reconcileSyncSequence = pw_core_sync(m_core, PW_ID_CORE, 0);
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(50);
+  while (m_reconcileSyncPending && std::chrono::steady_clock::now() < deadline) {
+    pw_loop_iterate(m_loop, 10);
+  }
+  m_reconcileSyncPending = false;
 }
 
 void PipeWireService::onRegistryGlobal(std::uint32_t id, const char* type, std::uint32_t, const spa_dict* props) {
@@ -2525,6 +2547,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (parts.size() != 1) {
           return "error: volume-set requires <value>\n";
         }
+        syncDefaultNodes();
         const auto* sink = defaultSink();
         if (!sink)
           return "error: no default output\n";
@@ -2545,6 +2568,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (parts.size() > 1) {
           return "error: volume-up accepts at most one optional [step]\n";
         }
+        syncDefaultNodes();
         const auto* sink = defaultSink();
         if (!sink)
           return "error: no default output\n";
@@ -2566,6 +2590,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (parts.size() > 1) {
           return "error: volume-down accepts at most one optional [step]\n";
         }
+        syncDefaultNodes();
         const auto* sink = defaultSink();
         if (!sink)
           return "error: no default output\n";
@@ -2582,6 +2607,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
   );
 
   ipc.bind(noctalia::cli::msg::volumeMute, [this](const std::string&) -> std::string {
+    syncDefaultNodes();
     const auto* sink = defaultSink();
     if (!sink)
       return "error: no default output\n";
@@ -2596,6 +2622,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (parts.size() != 1) {
           return "error: mic-volume-set requires <value>\n";
         }
+        syncDefaultNodes();
         const auto* source = defaultSource();
         if (!source)
           return "error: no default input\n";
@@ -2616,6 +2643,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (parts.size() > 1) {
           return "error: mic-volume-up accepts at most one optional [step]\n";
         }
+        syncDefaultNodes();
         const auto* source = defaultSource();
         if (!source)
           return "error: no default input\n";
@@ -2638,6 +2666,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
         if (parts.size() > 1) {
           return "error: mic-volume-down accepts at most one optional [step]\n";
         }
+        syncDefaultNodes();
         const auto* source = defaultSource();
         if (!source)
           return "error: no default input\n";
@@ -2654,6 +2683,7 @@ void PipeWireService::registerIpc(IpcService& ipc, const ConfigService& config) 
   );
 
   ipc.bind(noctalia::cli::msg::micMute, [this](const std::string&) -> std::string {
+    syncDefaultNodes();
     const auto* source = defaultSource();
     if (!source)
       return "error: no default input\n";
