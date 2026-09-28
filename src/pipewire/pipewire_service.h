@@ -230,6 +230,11 @@ public:
   // default stale until the next change (e.g. volume keys hitting speakers while BT is default).
   void refreshDefaultMetadata();
   void attachDefaultMetadata(struct pw_metadata* proxy);
+  // Reconciles the tracked default against the server with a bounded round-trip: re-bind forces
+  // the server to re-emit current default.audio.sink/source, then pump until our sync completes
+  // (or 50ms passes). Call before acting on defaultSink()/defaultSource() in IPC handlers so a
+  // default switch that landed with no topology change can't stick (volume keys on the old sink).
+  void syncDefaultNodes();
 
   // Authoritative device volume/mute from WirePlumber's mixer-api (see setWirePlumberMixer).
   void onMixerVolumeChanged(std::uint32_t id, float volume, bool muted);
@@ -298,6 +303,8 @@ private:
   bool m_hasConnected = false;
   std::chrono::steady_clock::time_point m_reconnectAt;
   std::chrono::milliseconds m_reconnectDelay{250};
+  int m_reconcileSyncSequence = -1;
+  bool m_reconcileSyncPending = false;
 
   std::unordered_map<std::uint32_t, std::unique_ptr<NodeData>> m_nodes;
   std::unordered_map<std::uint32_t, ClientData> m_clients;
