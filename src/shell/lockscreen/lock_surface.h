@@ -13,6 +13,7 @@
 #include "wayland/surface.h"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -231,6 +232,11 @@ private:
   std::string m_outputKey;
   LockscreenWidgetsHost* m_widgetsHost = nullptr;
   bool m_firstFrameRendered = false;
+  // Set by forceRepaintAfterResume(); cleared when the next frame callback lands. Measures how
+  // long the lock screen takes to present its first post-resume frame (stale desktop glimpses
+  // after lid-open mean this number is too big).
+  bool m_resumeRepaintPending = false;
+  std::chrono::steady_clock::time_point m_resumeRepaintAt{};
   std::function<void()> m_renderCallback;
   std::function<void()> m_transitionCallback;
 

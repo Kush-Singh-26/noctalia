@@ -1,6 +1,7 @@
 #include "shell/lockscreen/lock_surface.h"
 
 #include "capture/screencopy_capture.h"
+#include "core/log.h"
 #include "core/ui_phase.h"
 #include "dbus/mpris/mpris_art.h"
 #include "dbus/mpris/mpris_service.h"
@@ -41,6 +42,8 @@
 #include <wayland-client-core.h>
 
 namespace {
+
+  constexpr Logger kLog("lockscreen");
 
   const ext_session_lock_surface_v1_listener kLockSurfaceListener = {
       .configure = &LockSurface::handleConfigure,
@@ -2107,6 +2110,8 @@ void LockSurface::prepareForGraphicsReset() noexcept {
 
 void LockSurface::forceRepaintAfterResume() {
   discardPendingFrameCallback();
+  m_resumeRepaintPending = true;
+  m_resumeRepaintAt = std::chrono::steady_clock::now();
   const bool exiting =
       m_transitionPhase == TransitionPhase::Exiting || m_transitionPhase == TransitionPhase::ExitEndpoint;
   cancelTransitionAnimation();
@@ -2124,6 +2129,12 @@ void LockSurface::forceRepaintAfterResume() {
 }
 
 void LockSurface::onFrameCallbackDone() {
+  if (m_resumeRepaintPending) {
+    m_resumeRepaintPending = false;
+    const auto elapsed =
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - m_resumeRepaintAt);
+    kLog.info("lock surface first frame after resume committed in {}ms", elapsed.count());
+  }
   if (!m_firstFrameRendered) {
     m_firstFrameRendered = true;
     if (m_renderCallback) {

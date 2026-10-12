@@ -37,6 +37,12 @@ namespace {
   // restarts). A sick device must degrade to password, never churn or freeze the lockscreen.
   constexpr int kMaxChainedFailures = 5;
   constexpr auto kMaxRestartBackoff = std::chrono::milliseconds(4000);
+  // Wake settle: outputs, fprintd re-init and the first lock frame all land in the first seconds
+  // after resume. An immediate VerifyStart races fprintd's post-restart driver init on Goodix
+  // hardware and can wedge it into a protocol-error storm, burning the exact window the lock
+  // screen needs to repaint. Defer the wake re-arm briefly; explicit user action still verifies
+  // via the normal start() path.
+  constexpr auto kWakeSettleDelay = std::chrono::seconds(4);
 
   enum class MatchResult {
     Invalid,
@@ -89,9 +95,14 @@ FingerprintAuthenticator::FingerprintAuthenticator(SystemBus& bus) : m_bus(bus) 
         // the sensor with a stalled endpoint on resume. startVerify() already
         // refuses to run while m_sleeping, so only the re-arm state needs clearing.
         m_retryTimer.stop();
+        m_wakeSettleTimer.stop();
         m_verifying = false;
       } else if (m_active && !m_abort) {
-        startVerify(false);
+        m_wakeSettleTimer.start(kWakeSettleDelay, [this, generation = m_generation]() {
+          if (generation == m_generation && m_active && !m_sleeping && !m_abort) {
+            startVerify(false);
+          }
+        });
       }
     });
   } catch (const sdbus::Error& e) {
@@ -128,6 +139,7 @@ void FingerprintAuthenticator::start() {
 
 void FingerprintAuthenticator::stop() {
   m_retryTimer.stop();
+  m_wakeSettleTimer.stop();
   m_active = false;
   m_verifying = false;
   m_claiming = false;

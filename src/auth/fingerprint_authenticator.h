@@ -57,6 +57,7 @@ private:
   StatusCallback m_onStatus;
 
   Timer m_retryTimer;
+  Timer m_wakeSettleTimer;
 
   bool m_active = false;
   bool m_verifying = false;
