@@ -64,12 +64,12 @@
 #include "scripting/plugin_runtime_context.h"
 #include "shell/clipboard/clipboard_panel.h"
 #include "shell/clipboard/clipboard_paste.h"
-#include "shell/process/process_panel.h"
 #include "shell/control_center/control_center_panel.h"
 #include "shell/greeter/greeter_appearance_sync.h"
 #include "shell/launcher/launcher_panel.h"
 #include "shell/panel/plugin_panel.h"
 #include "shell/polkit/polkit_panel.h"
+#include "shell/process/process_panel.h"
 #include "shell/session/session_ipc.h"
 #include "shell/session/session_panel.h"
 #include "shell/setup_wizard/setup_wizard_panel.h"
@@ -353,7 +353,12 @@ void Application::initLockScreenAndSession() {
         if (m_screenSaverService != nullptr) {
           m_screenSaverService->emitActiveChanged(true);
         }
-        releaseSleepDelayInhibitIfPending();
+        // For sleep-bound locks, don't release the sleep inhibit immediately.
+        // runAfterSessionLocked defers it until the first lock frame is scanned out,
+        // so the panel never retains a pre-lock desktop image.
+        if (!m_releaseSleepDelayWhenLocked) {
+          releaseSleepDelayInhibitIfPending();
+        }
       },
       [this]() {
         m_idleGraceOverlay.hide();

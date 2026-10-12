@@ -644,8 +644,11 @@ void LockScreen::handleLocked(void* data, ext_session_lock_v1* /*lock*/) {
   for (auto& instance : self->m_instances) {
     instance.surface->setLockedState(true);
     instance.surface->setOnLogin([self]() { self->tryAuthenticate(); });
-    instance.surface->startEnterTransition();
+    if (!self->m_lockForSuspend) {
+      instance.surface->startEnterTransition();
+    }
   }
+  self->m_lockForSuspend = false;
 
   // Start the fallback timer (3 seconds) to trigger suspend anyway if surfaces take too long to render
   self->m_suspendTimeoutTimer.start(std::chrono::seconds(3), [self]() {
@@ -1221,14 +1224,16 @@ std::string LockScreen::passwordPamService() const {
   // Fall back to the su stack (no pam_fprintd on layouts where su avoids
   // system-auth), then login. Either may still stall where pam_fprintd is
   // in the chain; installing the service file above is the real fix.
-  if (m_configService != nullptr && m_configService->config().lockscreen.fingerprint
+  if (m_configService != nullptr
+      && m_configService->config().lockscreen.fingerprint
       && ::access("/etc/pam.d/su", R_OK) == 0) {
     return "su";
   }
   return "login";
 }
 
-void LockScreen::handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result) {  if (generation != m_authGeneration || !m_locked) {
+void LockScreen::handleAuthResult(std::uint64_t generation, PamAuthenticator::Result result) {
+  if (generation != m_authGeneration || !m_locked) {
     return;
   }
 

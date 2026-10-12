@@ -52,6 +52,7 @@ public:
       SessionActionRunner* sessionActions, MprisService* mpris, const WeatherService* weather, HttpClient* httpClient
   );
   bool lock();
+  void setLockForSuspend(bool forSuspend) { m_lockForSuspend = forSuspend; }
   void primeDesktopCaptures();
   void clearPrimedDesktopCaptures();
   void unlock();
@@ -163,6 +164,7 @@ private:
   bool m_lockPending = false;
   bool m_locked = false;
   bool m_lockStarting = false;
+  bool m_lockForSuspend = false;
   bool m_desktopCapturesPrimed = false;
   std::uint64_t m_desktopCaptureGeneration = 0;
   bool m_lockDeferred = false;

@@ -1097,6 +1097,7 @@ void Application::initSystemBusServices() {
             if (m_lockScreen.isActive()) {
               return;
             }
+            m_lockScreen.setLockForSuspend(true);
             if (!m_lockScreen.lock()) {
               m_releaseSleepDelayWhenLocked = false;
               if (m_logindService != nullptr) {
@@ -1112,7 +1113,11 @@ void Application::initSystemBusServices() {
               if (m_logindService != nullptr) {
                 m_logindService->releaseSleepDelayInhibit();
               }
+              return;
             }
+            // Defer sleep inhibit release until the first lock frame is scanned out,
+            // so the panel never retains a pre-lock desktop image.
+            m_lockScreen.runAfterSessionLocked([this]() { releaseSleepDelayInhibitIfPending(); });
             return;
           }
           m_skipLockOnNextSleep = false;
