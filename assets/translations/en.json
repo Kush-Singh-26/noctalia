@@ -10,7 +10,8 @@
       "remove-and-retry": "Remove your finger and try again",
       "retry": "Please scan your fingerprint again",
       "swipe-too-short": "Swipe was too short, try again",
-      "too-many-attempts": "Fingerprint disabled (too many attempts)"
+      "too-many-attempts": "Fingerprint disabled (too many attempts)",
+      "unavailable": "Fingerprint reader unavailable, use password"
     },
     "pam": {
       "authentication-failed": "Authentication failed",
