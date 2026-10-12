@@ -193,6 +193,8 @@ namespace {
     TEST_CHECK(fake.owner() == self);                 // the claim is held until cleanup, as before
 
     auth.stop();
+    // Release is fire-and-forget so a sick fprintd can never block the caller.
+    drainUntil(bus, [&]() { return fake.owner().empty(); });
     TEST_CHECK(fake.accepted("Release", self) == 1);
     TEST_CHECK(fake.owner().empty());
 
@@ -202,6 +204,7 @@ namespace {
     TEST_CHECK(fake.accepted("Claim", self) == 2);
 
     auth.stop();
+    drainUntil(bus, [&]() { return fake.owner().empty(); });
     TEST_CHECK(fake.owner().empty());
   }
 
@@ -218,6 +221,7 @@ namespace {
     drainUntil(bus, [&] { return authenticated == 1; });
 
     auth.stop();
+    drainUntil(bus, [&]() { return fake.owner().empty(); });
     TEST_CHECK(fake.owner().empty());
     const std::vector<std::string> expected{"Claim", "VerifyStart", "VerifyStop", "Release"};
     TEST_CHECK(fake.acceptedMethods(self) == expected);
