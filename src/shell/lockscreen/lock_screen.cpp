@@ -570,11 +570,18 @@ bool LockScreen::isSessionLocked() const noexcept { return m_locked; }
 
 bool LockScreen::tryFlushPendingAfterLocked() {
   if (m_locked && m_pendingAfterLocked && allSurfacesReady()) {
-    auto pending = std::move(m_pendingAfterLocked);
-    m_pendingAfterLocked = {};
-    m_suspendTimeoutTimer.stop();
-    DeferredCall::callLater(std::move(pending));
-    return true;
+    if (m_scanoutDelayTimer.active()) {
+      return false;
+    }
+    m_scanoutDelayTimer.start(std::chrono::milliseconds(50), [this]() {
+      if (m_pendingAfterLocked) {
+        auto pending = std::move(m_pendingAfterLocked);
+        m_pendingAfterLocked = {};
+        m_suspendTimeoutTimer.stop();
+        DeferredCall::callLater(std::move(pending));
+      }
+    });
+    return false;
   }
   return false;
 }
@@ -1078,6 +1085,7 @@ void LockScreen::notifyLockAborted() {
 void LockScreen::resetLockState() {
   m_pendingAfterLocked = {};
   m_suspendTimeoutTimer.stop();
+  m_scanoutDelayTimer.stop();
   m_unlockTransitionTimer.stop();
   m_lockDeferred = false;
   m_lockStarting = false;

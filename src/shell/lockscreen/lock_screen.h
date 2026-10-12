@@ -182,6 +182,7 @@ private:
   const WeatherService* m_weather = nullptr;
   HttpClient* m_httpClient = nullptr;
   Timer m_suspendTimeoutTimer;
+  Timer m_scanoutDelayTimer;
   // CLOCK_BOOTTIME millis when the lock flow started; grace expires gracePeriodSeconds after it.
   std::int64_t m_lockedAtMillis = 0;
   bool m_graceAllowed = false;
