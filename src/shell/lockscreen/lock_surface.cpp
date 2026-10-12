@@ -2112,6 +2112,10 @@ void LockSurface::forceRepaintAfterResume() {
   discardPendingFrameCallback();
   m_resumeRepaintPending = true;
   m_resumeRepaintAt = std::chrono::steady_clock::now();
+  // Never replay the enter transition after resume: the cover/snapshot belongs to the
+  // pre-suspend lock event. Post-resume frames must be end-state immediately, otherwise a
+  // stale desktop image lingers on screen after lid-open.
+  m_enterTransitionRequested = false;
   const bool exiting =
       m_transitionPhase == TransitionPhase::Exiting || m_transitionPhase == TransitionPhase::ExitEndpoint;
   cancelTransitionAnimation();
