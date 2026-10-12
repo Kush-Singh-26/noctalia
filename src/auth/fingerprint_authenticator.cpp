@@ -29,6 +29,14 @@ namespace {
 
   constexpr int kMaxRetries = 3;
   constexpr auto kRetryDelay = std::chrono::milliseconds(250);
+  // Bounds every fprintd round-trip. Async calls never block the UI thread, but without a timeout
+  // a wedged fprintd (e.g. Goodix 0xc6 protocol storm after resume) leaves the call pending and the
+  // authenticator stuck in claiming/verifying limbo.
+  constexpr auto kCallTimeout = std::chrono::seconds(3);
+  // Chained-failure cap before fingerprint disarms itself for the session (with backoff between
+  // restarts). A sick device must degrade to password, never churn or freeze the lockscreen.
+  constexpr int kMaxChainedFailures = 5;
+  constexpr auto kMaxRestartBackoff = std::chrono::milliseconds(4000);
 
   enum class MatchResult {
     Invalid,
@@ -66,8 +74,12 @@ namespace {
 
 FingerprintAuthenticator::FingerprintAuthenticator(SystemBus& bus) : m_bus(bus) {
   try {
+    // Name-based proxy: survives fprintd restarts across suspend/resume without recreation.
+    m_manager = sdbus::createProxy(m_bus.connection(), kFprintBusName, kManagerPath);
     m_loginManager = sdbus::createProxy(m_bus.connection(), kLoginBusName, kLoginPath);
-    // on sleep, leave the device to fprintd; on resume, re-arm if still active
+    // on sleep, leave the device to fprintd; on resume, re-arm if still active. The re-arm goes
+    // through startVerify(), whose async health probe (GetDefaultDevice with timeout) refuses a
+    // sick device instead of verifying into a storm, so no separate wake path is needed.
     m_loginManager->uponSignal("PrepareForSleep").onInterface(kLoginManagerInterface).call([this](bool sleeping) {
       m_sleeping = sleeping;
       if (sleeping) {
@@ -103,8 +115,11 @@ void FingerprintAuthenticator::start() {
 
   m_active = true;
   m_abort = false;
+  m_unavailable = false;
   m_retries = 0;
+  m_consecutiveFailures = 0;
   m_reclaimAttempted = false;
+  m_generation++;
   if (m_sleeping) {
     return;
   }
@@ -116,30 +131,56 @@ void FingerprintAuthenticator::stop() {
   m_active = false;
   m_verifying = false;
   m_claiming = false;
+  m_generation++;
   // Release even after verify-disconnected: fprintd also reports libfprint's recoverable TOO_HOT
   // cutoff that way and keeps our claim until Release or until this long-lived connection closes.
   releaseDevice();
 }
 
-bool FingerprintAuthenticator::createDeviceProxy() {
-  sdbus::ObjectPath path;
+void FingerprintAuthenticator::ensureDeviceProxyAsync(DeviceReadyCallback done) {
+  if (m_device != nullptr) {
+    done(true);
+    return;
+  }
+  if (m_manager == nullptr) {
+    done(false);
+    return;
+  }
+  // Async with timeout doubles as the wake health probe: a wedged fprintd answers with an error
+  // or not at all (timeout), and the caller degrades to password instead of blocking the UI.
+  const int generation = m_generation;
   try {
-    auto manager = sdbus::createProxy(m_bus.connection(), kFprintBusName, kManagerPath);
-    manager->callMethod("GetDefaultDevice").onInterface(kManagerInterface).storeResultsTo(path);
+    m_manager->callMethodAsync("GetDefaultDevice")
+        .onInterface(kManagerInterface)
+        .withTimeout(kCallTimeout)
+        .uponReplyInvoke([this, generation, done](std::optional<sdbus::Error> error, sdbus::ObjectPath path) {
+          if (generation != m_generation) {
+            return; // stopped or restarted while the probe was in flight
+          }
+          if (error.has_value()) {
+            kLog.info("no fprintd device available: {}", error->what());
+            done(false);
+            return;
+          }
+          kLog.info("using fingerprint device {}", path.c_str());
+          try {
+            m_device = sdbus::createProxy(m_bus.connection(), kFprintBusName, path);
+          } catch (const sdbus::Error& e) {
+            kLog.warn("could not create device proxy: {}", e.what());
+            m_device.reset();
+            done(false);
+            return;
+          }
+          attachDeviceSignals();
+          done(true);
+        });
   } catch (const sdbus::Error& e) {
     kLog.info("no fprintd device available: {}", e.what());
-    return false;
+    done(false);
   }
+}
 
-  kLog.info("using fingerprint device {}", path.c_str());
-  try {
-    m_device = sdbus::createProxy(m_bus.connection(), kFprintBusName, path);
-  } catch (const sdbus::Error& e) {
-    kLog.warn("could not create device proxy: {}", e.what());
-    m_device.reset();
-    return false;
-  }
-
+void FingerprintAuthenticator::attachDeviceSignals() {
   m_device->uponSignal("VerifyStatus").onInterface(kDeviceInterface).call([this](const std::string& result, bool done) {
     handleVerifyStatus(result, done);
   });
@@ -164,8 +205,6 @@ bool FingerprintAuthenticator::createDeviceProxy() {
         } catch (const sdbus::Error&) {
         }
       });
-
-  return true;
 }
 
 void FingerprintAuthenticator::claimDevice() {
@@ -174,54 +213,86 @@ void FingerprintAuthenticator::claimDevice() {
   }
   m_claiming = true;
 
-  m_device->callMethodAsync("Claim")
-      .onInterface(kDeviceInterface)
-      .withArguments(std::string{})
-      .uponReplyInvoke([this](std::optional<sdbus::Error> e) {
-        m_claiming = false;
-        if (e.has_value()) {
-          kLog.info("could not claim fingerprint device: {}", e->what());
-          m_verifying = false;
-          return;
-        }
-        kLog.info("claimed fingerprint device");
-        if (m_active && !m_sleeping) {
-          startVerify(false);
-        }
-      });
+  // Timeout bounds the wait: without it a lost reply leaves m_claiming set forever and every
+  // later startVerify() early-returns on it, silently wedging fingerprint for the session.
+  const int generation = m_generation;
+  try {
+    m_device->callMethodAsync("Claim")
+        .onInterface(kDeviceInterface)
+        .withArguments(std::string{})
+        .withTimeout(kCallTimeout)
+        .uponReplyInvoke([this, generation](std::optional<sdbus::Error> e) {
+          m_claiming = false;
+          if (generation != m_generation) {
+            return;
+          }
+          if (e.has_value()) {
+            kLog.info("could not claim fingerprint device: {}", e->what());
+            m_verifying = false;
+            noteFailure();
+            return;
+          }
+          kLog.info("claimed fingerprint device");
+          noteSuccess();
+          if (m_active && !m_sleeping && !m_unavailable) {
+            startVerify(false);
+          }
+        });
+  } catch (const sdbus::Error& e) {
+    m_claiming = false;
+    kLog.info("could not claim fingerprint device: {}", e.what());
+    m_verifying = false;
+    noteFailure();
+  }
 }
 
 void FingerprintAuthenticator::startVerify(bool isRetry) {
-  if (!m_active || m_sleeping || m_abort) {
+  if (!m_active || m_sleeping || m_abort || m_unavailable) {
     return;
   }
   m_verifying = true;
 
   if (m_device == nullptr) {
-    if (!createDeviceProxy()) {
-      m_verifying = false;
-      return;
-    }
-
-    emitStatus(i18n::tr("auth.fingerprint.ready"), false);
-    claimDevice();
+    ensureDeviceProxyAsync([this, generation = m_generation](bool ready) {
+      if (generation != m_generation) {
+        return;
+      }
+      if (!ready) {
+        m_verifying = false;
+        noteFailure();
+        return;
+      }
+      emitStatus(i18n::tr("auth.fingerprint.ready"), false);
+      claimDevice();
+    });
     return;
   }
   if (m_claiming) {
     return;
   }
 
+  const int generation = m_generation;
   m_device->callMethodAsync("VerifyStart")
       .onInterface(kDeviceInterface)
       .withArguments(std::string{"any"})
-      .uponReplyInvoke([this, isRetry](std::optional<sdbus::Error> e) {
+      .withTimeout(kCallTimeout)
+      .uponReplyInvoke([this, isRetry, generation](std::optional<sdbus::Error> e) {
+        if (generation != m_generation) {
+          return;
+        }
         if (e.has_value()) {
           kLog.info("could not start fingerprint verification: {}", e->what());
           m_verifying = false;
+          noteFailure();
           // A claim dropped across suspend/resume makes VerifyStart fail with ClaimDevice; drop the
           // stale proxy and recreate+reclaim once. Destroying the proxy here would use-after-free
           // the async reply handler, so defer the reset until after it returns.
-          if (!m_reclaimAttempted && m_active && !m_sleeping && !m_abort && isRecoverableVerifyStartError(*e)) {
+          if (!m_reclaimAttempted
+              && !m_unavailable
+              && m_active
+              && !m_sleeping
+              && !m_abort
+              && isRecoverableVerifyStartError(*e)) {
             m_reclaimAttempted = true;
             m_retryTimer.start(kRetryDelay, [this]() {
               m_device.reset();
@@ -229,11 +300,14 @@ void FingerprintAuthenticator::startVerify(bool isRetry) {
             });
             return;
           }
-          emitStatus({}, false); // issue loading: drop the status message
+          if (!m_unavailable) {
+            emitStatus({}, false); // issue loading: drop the status message
+          }
           return;
         }
         kLog.debug("fingerprint verification started");
         m_reclaimAttempted = false;
+        noteSuccess();
         if (isRetry) {
           m_retries++;
         }
@@ -247,9 +321,19 @@ void FingerprintAuthenticator::stopVerify() {
   if (m_device == nullptr) {
     return;
   }
+  // Fire-and-forget async: the old sync call blocked the whole lockscreen UI whenever fprintd was
+  // wedged (Goodix post-resume storm), which is exactly the reported freeze. The handler only logs.
   try {
-    m_device->callMethod("VerifyStop").onInterface(kDeviceInterface);
-    kLog.debug("fingerprint verification stopped");
+    m_device->callMethodAsync("VerifyStop")
+        .onInterface(kDeviceInterface)
+        .withTimeout(kCallTimeout)
+        .uponReplyInvoke([](std::optional<sdbus::Error> e) {
+          if (e.has_value()) {
+            kLog.debug("could not stop fingerprint verification: {}", e->what());
+          } else {
+            kLog.debug("fingerprint verification stopped");
+          }
+        });
   } catch (const sdbus::Error& e) {
     kLog.debug("could not stop fingerprint verification: {}", e.what());
   }
@@ -259,13 +343,43 @@ void FingerprintAuthenticator::releaseDevice() {
   if (m_device == nullptr) {
     return;
   }
+  // Same fire-and-forget reasoning as stopVerify(): never block the UI on a sick fprintd.
+  // Issued and reset back-to-back on the main loop, so no reply can interleave; a late reply
+  // after proxy teardown is dropped by sdbus, and the handler only logs anyway.
   try {
-    m_device->callMethod("Release").onInterface(kDeviceInterface);
-    kLog.info("released fingerprint device");
+    m_device->callMethodAsync("Release")
+        .onInterface(kDeviceInterface)
+        .withTimeout(kCallTimeout)
+        .uponReplyInvoke([](std::optional<sdbus::Error> e) {
+          if (e.has_value()) {
+            kLog.debug("could not release fingerprint device: {}", e->what());
+          } else {
+            kLog.info("released fingerprint device");
+          }
+        });
   } catch (const sdbus::Error& e) {
     kLog.debug("could not release fingerprint device: {}", e.what());
   }
   m_device.reset();
+}
+
+void FingerprintAuthenticator::noteFailure() {
+  if (m_unavailable) {
+    return;
+  }
+  if (++m_consecutiveFailures >= kMaxChainedFailures) {
+    m_unavailable = true;
+    stopVerify();
+    emitStatus(i18n::tr("auth.fingerprint.unavailable"), true);
+    kLog.warn("disabling fingerprint for this session after {} consecutive failures", m_consecutiveFailures);
+  }
+}
+
+void FingerprintAuthenticator::noteSuccess() { m_consecutiveFailures = 0; }
+
+std::chrono::milliseconds FingerprintAuthenticator::restartBackoff() const {
+  const int shift = std::min(m_consecutiveFailures, 4);
+  return std::min(kRetryDelay * (1 << shift), kMaxRestartBackoff);
 }
 
 void FingerprintAuthenticator::handleVerifyStatus(const std::string& result, bool done) {
@@ -345,9 +459,14 @@ void FingerprintAuthenticator::handleVerifyStatus(const std::string& result, boo
     return;
   }
 
-  // In-place retries keep verifying; otherwise restart only when fprintd reports done.
-  if (!retryInPlace && !ownsRestart && done && !m_abort && m_active && !m_sleeping) {
-    startVerify(true);
+  // In-place retries keep verifying; otherwise restart only when fprintd reports done, with
+  // backoff and a chained-failure cap so a misbehaving device degrades to password instead of
+  // churning VerifyStart forever.
+  if (!retryInPlace && !ownsRestart && done && !m_abort && !m_unavailable && m_active && !m_sleeping) {
+    noteFailure();
+    if (!m_unavailable) {
+      m_retryTimer.start(restartBackoff(), [this]() { startVerify(true); });
+    }
   }
 }
 
