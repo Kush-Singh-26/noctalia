@@ -1133,6 +1133,13 @@ void Application::initSystemBusServices() {
           if (m_lockScreen.isActive()) {
             m_lockScreen.forceRepaintAfterResume();
             m_lockScreen.onSystemResumed();
+            // Re-assert the logind locked hint on every resume: lock() is a no-op when the
+            // session is already locked, so nothing else repairs a hint that logind (or a
+            // locker restart) cleared mid-cycle. niri follows this hint; a stale "no" unblanks
+            // the session on resume.
+            if (m_logindService != nullptr) {
+              m_logindService->setSessionLockedHint(true);
+            }
           }
           m_weatherService.requestRefresh();
           m_gammaService.reevaluateSchedule();

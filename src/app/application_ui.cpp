@@ -387,6 +387,8 @@ void Application::initLockScreenAndSession() {
       if (!m_lockScreen.isActive()) {
         (void)m_lockScreen.lock();
       }
+      // lock() no-ops on an already-locked session, so re-assert the hint here too.
+      m_logindService->setSessionLockedHint(true);
     });
     m_logindService->setUnlockCallback([this]() {
       if (m_lockScreen.isActive()) {
