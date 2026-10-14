@@ -49,7 +49,7 @@ public:
   using StreamDataCallback = std::function<void(std::string_view chunk)>;
   using StreamCloseCallback = std::function<void(HttpStreamResult)>;
 
-  HttpClient();
+  explicit HttpClient(std::filesystem::path caBundlePath = {});
   ~HttpClient();
 
   HttpClient(const HttpClient&) = delete;
@@ -156,10 +156,11 @@ private:
   void performMulti(const char* reason);
   // Applies the options every transfer shares, including the non-blocking abandonment of a
   // stuck DNS lookup. Call before the request-specific options.
-  static void applyCommonOptions(CURL* easy);
+  void applyCommonOptions(CURL* easy) const;
   [[nodiscard]] bool hasActiveTransfers() const;
 
   CURLM* m_multi = nullptr;
+  std::filesystem::path m_caBundlePath;
   int m_running = 0;
   std::chrono::steady_clock::time_point m_lastServiceAt;
   bool m_offlineMode = false;

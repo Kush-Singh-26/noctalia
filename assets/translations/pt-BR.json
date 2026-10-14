@@ -226,7 +226,9 @@
       "auto": "Automático",
       "custom": "Personalizado",
       "inherit": "Herdar",
-      "off": "Desligada"
+      "inherit-value": "Herdar ({value})",
+      "off": "Desligada",
+      "on": "Ligado"
     }
   },
   "control-center": {
@@ -551,7 +553,10 @@
         "select-sticker-image": "Selecionar imagem de sticker"
       },
       "settings": {
+        "album-art-background": "Fundo da Arte de Álbum",
+        "album-art-blur": "Desfoque da Arte de Álbum",
         "aspect-ratio": "Proporção",
+        "audio-visualizer": "Visualizador de Áudio",
         "background": "Plano de Fundo",
         "background-color": "Cor",
         "background-opacity": "Opacidade",
@@ -626,6 +631,7 @@
         "show-login-button": "Botão de Login",
         "show-media": "Mídia",
         "show-password-hint": "Dica de Senha",
+        "show-seconds": "Ponteiro dos Segundos",
         "show-session-buttons": "Botões de Sessão",
         "show-unlock-hint": "Dica de Desbloqueio",
         "show-vpn-label": "Mostra Rótulo VPN",
@@ -714,6 +720,33 @@
     }
   },
   "launcher": {
+    "browser": {
+      "actions": {
+        "power": "Energia",
+        "settings": "Configurações"
+      },
+      "navigation": {
+        "all-apps": "Todos Apps",
+        "categories": "Categorias",
+        "pinned": "Fixado",
+        "providers": "Provedores",
+        "recent": "Recente"
+      },
+      "options": {
+        "show-grid": "Mostrar Visão em Grade",
+        "show-list": "Mostrar Visão em Lista",
+        "sort-by-frequency": "Priorizar Resultados Frequentes",
+        "use-default-order": "Usar Order Padrão"
+      },
+      "sections": {
+        "all-apps": "Todos Apps",
+        "other-apps": "Outros Apps",
+        "pinned": "Fixado",
+        "providers": "Provedores",
+        "recent": "Recente",
+        "search-results": "Resultados de Busca"
+      }
+    },
     "categories": {
       "all": "Todos",
       "applications": {
@@ -888,6 +921,15 @@
       "lockscreen-widgets-editor-blocked-locked": "Desbloqueie a sessão antes de editar os widgets da tela de bloqueio.",
       "lockscreen-widgets-editor-enabled": "O editor de widgets da tela de bloqueio está ligado. Mude para um espaço de trabalho vazio para que as janelas abertas não cubram o editor.",
       "mpris-disabled": "MPRIS desabilitado",
+      "network": "Rede",
+      "network-connect-failed-auth": "A senha foi rejeitada o não fornecida.",
+      "network-connect-failed-generic": "NetworkManager não conseguiu completar a conexão.",
+      "network-connect-failed-ip": "Conectado à rede mas não foi possível obter um endereço IP.",
+      "network-connect-failed-no-reply": "O NetworkManger não respondeu. Uma requisição de autorização talvez esteja aguardando sem um agente polkit para respondê-la.",
+      "network-connect-failed-not-found": "A rede não está mais ao alcance.",
+      "network-connect-failed-permission": "Sem autorização para mudar conexões de rede. Habilite o agente polkit nas Configurações -> Segurança",
+      "network-connect-failed-timeout": "A rede não respondeu a tempo.",
+      "network-connect-failed-title": "Não foi possível conectar a {ssid}",
       "polkit-agent": "Agente de Autenticação",
       "polkit-no-session": "Agente Polkit precisa de logind, elogind or XDG_SESSION_ID. Em configurações que utilizam apenas o seatd, ele não consegue se registrar para solicitações gráficas. Use o pkexec no terminal para sincronizar o greeter ou instale o elogind para autenticação durante a sessão.",
       "screen-time-reset": "Tempo de Tela",
@@ -1540,6 +1582,15 @@
         "top-right": "Topo à direita"
       },
       "shell": {
+        "launcher-default-view": {
+          "categories": "Categorias",
+          "pinned": "Fixado",
+          "recent": "Recente"
+        },
+        "launcher-search-position": {
+          "bottom": "Inferior",
+          "top": "Topo"
+        },
         "panel-placement": {
           "attached": "Acoplado",
           "floating": "Flutuante"
@@ -1701,14 +1752,27 @@
         "installed": "Instalado",
         "loading": "Carregando catálogo...",
         "no-readme": "Nenhuma descrição disponível.",
+        "not-listed": "Não listado",
         "open-page": "Abrir página de plugin em noctalia.dev",
         "open-source": "Abrir repositório fonte de plugin",
+        "recommend": "Recomendar",
+        "recommendation-error": "A mudança não foi confirmada. Sua recomendação anterior não foi modificada. Tente novamente a mesma mudança para que seja reconciliada.",
+        "recommendation-not-recommendable": "O plugin não pode aceitar esta recomendação.",
+        "recommendation-pending": "Enviando recomendação...",
+        "recommendation-protocol-error": "O serviço retornou uma resposta inesperada. Sua recomendação anterior não foi modificada.",
+        "recommendation-rate-limited": "Muitas requisições. Aguarde antes de tentar novamente esta mudança.",
+        "recommendation-retry": "Tentar novamente a mudança de recomendação",
+        "recommendation-state-error": "O estado da recomendação não pôde ser lida ou salva. Verifique state.toml antes de tentar novamente.",
+        "recommendation-unavailable": "Recomendações estão temporariamente indisponíveis. Sua recomendação anterior não foi modificada. Você pode tentar novamente em breve.",
+        "remove-recommendation": "Remover recomendação",
         "results-count": "{count} plugins",
         "search-placeholder": "Busque plugins...",
         "sort-added-at-asc": "Ordenar por data (mais antigos primeiro)",
         "sort-added-at-desc": "Ordenar por data (mais recentes primeiro)",
+        "sort-most-recommended": "Mais recomendado",
         "sort-name-asc": "Ordenar por nome (A-Z)",
         "sort-name-desc": "Ordenar por nome (Z-A)",
+        "sort-trending": "Em Alta",
         "sort-updated-at-asc": "Ordenar por data de atualização (mais antigos primeiro)",
         "sort-updated-at-desc": "Ordenar por data de atualização (mais recentes primeiro)",
         "source-all": "Todas fontes",
@@ -1807,6 +1871,10 @@
         "shell-theme-mode": {
           "description": "Fixar modo Claro ou Escuro do Noctalia; Seguir mantém em sincronia com o Modo do Tema",
           "label": "Modo do Tema do Shell"
+        },
+        "show-close-buttons": {
+          "description": "Mostrar botões de fechar em painéis, lâminas de notificações, popups, diálogos e na janela de configurações",
+          "label": "Mostrar botões de Fechar"
         },
         "theme-mode": {
           "description": "Escolha o modo Escuro, Claro ou Automático baseado na hora do dia; também aplica em apps através de modelos",
@@ -1974,6 +2042,10 @@
         "show-on-workspace-switch": {
           "description": "Mostra brevemente a barra quando o espaço de trabalho ativo é alterado",
           "label": "Mostrar na Transição de Espaço de Trabalho"
+        },
+        "show-tooltip": {
+          "description": "Mostrar dicas ao passar o mouse sobre os widgets nesta barra; a configuração “Mostrar Dica” do próprio widget tem prioridade sobre esta",
+          "label": "Mostrar Dicas"
         },
         "start-widgets": {
           "description": "Widgets no lado inicial (esquerdo/superior) da barra",
@@ -2349,6 +2421,10 @@
           "description": "Desbloquear com um leitor de impressão digital por meio do fprintd, junto com uma da senha digitada",
           "label": "Desbloquear com Impressão Digital"
         },
+        "grace-period": {
+          "description": "Permitir desbloqueio sem senha por esta quantidade de segundos depois de bloquear; qualquer tecla pressionada ou movimento do mouse desbloqueará. Defina como 0 para sempre requisitar a senha",
+          "label": "Período de Carência"
+        },
         "lock-before-suspend": {
           "description": "Bloquear a sessão antes de dormir (fechando tampa, systemctl suspend, hibernate); Ações de bloquear & suspender ainda bloquearão primeiro.",
           "label": "Bloquear Antes de Suspender"
@@ -2478,6 +2554,14 @@
         }
       },
       "panels": {
+        "border-color": {
+          "description": "Cor de contorno para painéis flutuantes; o nome da função do tema segue o tema ativo, ou escolha uma cor personalizada ",
+          "label": "Cor da Borda"
+        },
+        "border-width": {
+          "description": "Espessura do contorno para painéis flutuantes em pixels, 0 oculta o traço",
+          "label": "Largura da Borda"
+        },
         "borders": {
           "description": "Desenhe um contorno nos painéis flutuantes",
           "label": "Bordas"
@@ -2522,10 +2606,6 @@
           "description": "Mostrar ações de aplicação junto com as aplicações",
           "label": "Mostrar Ações de Aplicação"
         },
-        "launcher-app-grid": {
-          "description": "Exibe uma grade de ícones de aplicativos com legendas abaixo deles quando os resultados forem apenas aplicativos",
-          "label": "Visão em Grade de Apps"
-        },
         "launcher-app-origin-indicator": {
           "description": "Mostrar indicadores de origem do pacote nos resultados de aplicação",
           "label": "Mostrar Indicadores de Origem da Aplicação"
@@ -2538,6 +2618,10 @@
           "description": "Exibir filtros de categoria no launcher; revele com F6 e depois alterne com F6 e Shift+F6.",
           "label": "Exibir Categorias"
         },
+        "launcher-category-icons-only": {
+          "description": "Mostrar somente ícones para categorias de apps, com nomes completos nas dicas ao passar o mouse",
+          "label": "Apenas Ícones de Categorias"
+        },
         "launcher-compact": {
           "description": "Usar ícones menores e estreitar as linhas de resultado",
           "label": "Linhas Compactas"
@@ -2545,6 +2629,10 @@
         "launcher-currency-exchange": {
           "description": "Obter tarifas de fontes on-line de terceiros",
           "label": "Conversão de Moedas"
+        },
+        "launcher-default-view": {
+          "description": "Escolher a visão mostrada quando o launcher abre sem a busca",
+          "label": "Visão Padrão"
         },
         "launcher-global-calculator": {
           "description": "Também mostrar resultados da calculadora em buscas sem prefixo",
@@ -2569,6 +2657,10 @@
         "launcher-global-windows": {
           "description": "Também mostrar janelas abertas na busca sem prefixo",
           "label": "Janelas na Busca Global"
+        },
+        "launcher-grid": {
+          "description": "Exibe uma grade de ícones de aplicativos com legendas abaixo deles quando os resultados forem apenas aplicativos",
+          "label": "Visão em Grade de Apps"
         },
         "launcher-ignored-panels": {
           "description": "Painéis que o provedor de painéis nunca lista (ex. caixas de diálogo, o assistente de configuração)",
@@ -2611,6 +2703,10 @@
           "description": "Apagar contagem de lançados e histórico de recentemente usados utilizados para ordenação do launcher",
           "label": "Redefinir Dados de Uso"
         },
+        "launcher-search-position": {
+          "description": "Posicionar a barra de ferramentas do launcher no topo ou na parte inferior",
+          "label": "Posição da Barra de Ferramentas"
+        },
         "launcher-session-search": {
           "description": "Incluir ações de sessão (bloquear, suspender, reiniciar, desligar, sair) nas buscas gerais do launcher, não apenas atrás do prefixo /session",
           "label": "Habilitar Busca na Sessão"
@@ -2619,9 +2715,25 @@
           "description": "Exibir ícones dos aplicativos nos resultados do launcher",
           "label": "Exibir Ícones dos Apps"
         },
+        "launcher-show-session-button": {
+          "description": "Mostrar um atalho para as ações de sessão configuradas",
+          "label": "Mostrar Botão de Sessão"
+        },
+        "launcher-show-settings-button": {
+          "description": "Mostrar um atalho nas Configurações Noctalia",
+          "label": "Mostrar Botão Configurações"
+        },
         "launcher-sort-by-usage": {
           "description": "Colocar os aplicativos usados com mais frequência no topo e exibir um filtro da categoria \"Usados recentemente\"",
           "label": "Organizar por Uso"
+        },
+        "launcher-track-usage": {
+          "description": "Gravar histórico do launcher para ordenação de Recente e baseado em uso",
+          "label": "Rastrear Uso"
+        },
+        "launcher-width": {
+          "description": "Definir a largura do painel do launcher",
+          "label": "Largura do Launcher"
         },
         "list-item-background": {
           "description": "Adicionar um fundo arredondado em cada item do launcher e da área de transferência",
@@ -2705,6 +2817,10 @@
         "transparency-mode": {
           "description": "Estilo vidro dos painéis, incluindo a opacidade dos painéis flutuantes e a translucência dos cards",
           "label": "Transparência"
+        },
+        "wallpaper-show-names": {
+          "description": "Legende cada miniatura com o nome do arquivo no seletor de papéis de parede.",
+          "label": "Mostrar Nomes de Arquivos"
         }
       },
       "power": {
@@ -2748,6 +2864,14 @@
           "description-opening": "Credenciais para o calendário estão sendo abertas através do Secret Service",
           "description-unavailable": "Nenhum provedor de Secret Service disponível nesta sessão",
           "label": "Armazenamento de Credenciais de Calendário"
+        },
+        "calendar-dedupe-events": {
+          "description": "Agrupar um evento que aparece em mais de um dos seus calendários em uma única entrada",
+          "label": "Mesclar Eventos Duplicados"
+        },
+        "calendar-dedupe-ignore-patterns": {
+          "description": "As expressões regulares são removidas do título de um evento antes da comparação; assim, títulos que diferem apenas em uma parte correspondente ainda são unificados",
+          "label": "Ignorar no título ao mesclar"
         },
         "calendar-digest-time": {
           "description": "Horário do dia para uma única notificação listando todos os eventos do dia. Deixe em branco para desabilitar.",
@@ -2857,8 +2981,20 @@
           "label": "Som da Notificação",
           "placeholder": "/path/to/sound.wav"
         },
+        "notification-sounds": {
+          "description": "Tocar um som quando notificações chegarem",
+          "label": "Sons de Notificação"
+        },
+        "power-sounds": {
+          "description": "Tocar um som quando o carregador conectar ou desconectar",
+          "label": "Sons de Energia"
+        },
+        "screenshot-sounds": {
+          "description": "Tocar um som ao fazer uma captura",
+          "label": "Sons de Captura de Tela"
+        },
         "shell-sounds": {
-          "description": "Tocar efeitos de som para eventos do shell",
+          "description": "Alternador mestre para efeitos sonoros do shell",
           "label": "Sons do Shell"
         },
         "sound-theme": {
@@ -2931,6 +3067,10 @@
           "description": "Arquivo de áudio usado para feedback de volume",
           "label": "Som de Mudança de Volume",
           "placeholder": "/path/to/sound.wav"
+        },
+        "volume-sounds": {
+          "description": "Tocar um som quando o volume de entrada ou de saída muda",
+          "label": "Volume dos Sons"
         },
         "weather": {
           "description": "Habilitar o serviço de clima via open-meteo.com",
@@ -4280,6 +4420,10 @@
           "description": "IDs de itens da bandeja para ocultar",
           "label": "Ocultar Itens"
         },
+        "hidden-workspaces": {
+          "description": "Nomes de espaços de trabalho cujas janelas não aparecem na barra de tarefas, a menos que esse espaço de trabalho esteja ativo",
+          "label": "Espaços de Trabalho Ocultos"
+        },
         "hide-album-art": {
           "description": "Ocultar a arte do álbum",
           "label": "Ocultar Arte de Álbum"
@@ -4312,6 +4456,10 @@
         "hide-when-full": {
           "description": "Oculte o widget da bateria quando estiver totalmente carregado",
           "label": "Ocultar Quando Cheia"
+        },
+        "hide-when-idle": {
+          "description": "Ocultar o widget enquanto o reprodutor MPRIS estiver em pausa ou parado",
+          "label": "Ocultar Quando Ocioso"
         },
         "hide-when-inactive": {
           "description": "Ocultar o widget de microfone enquanto não houver aplicação capturando áudio",
@@ -4573,8 +4721,8 @@
           "label": "Exibir Temperatura"
         },
         "show-tooltip": {
-          "description": "Mostrar o nome completo de um espaço de trabalho ao passar o ponteiro do mouse sobre, quando a pílula não estiver mostrando",
-          "label": "Mostrar Dica do Nome"
+          "description": "Mostrar a dica deste widget ao passar sobre",
+          "label": "Mostrar Dica"
         },
         "show-unlock-hint": {
           "description": "Exibir o cartão de status acima da caixa de login para dicas de desbloqueio e caixas de diálogo de autenticação; Erros e avisos de Caps Lock ainda aparecem quando isto está desligado",

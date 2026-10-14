@@ -2282,10 +2282,6 @@
           "description": "Chọn tối đa sáu nút lối tắt cho tab Trang chủ",
           "label": "Lối tắt Trang chủ"
         },
-        "launcher-app-grid": {
-          "description": "Hiển thị lưới biểu tượng ứng dụng với nhãn bên dưới khi kết quả chỉ bao gồm ứng dụng",
-          "label": "Hiển thị ứng dụng dạng lưới"
-        },
         "launcher-auto-paste": {
           "label": "Tự động dán"
         },
@@ -2296,6 +2292,10 @@
         "launcher-compact": {
           "description": "Dùng biểu tượng nhỏ hơn và hàng kết quả gọn hơn",
           "label": "Hàng gọn"
+        },
+        "launcher-grid": {
+          "description": "Hiển thị lưới biểu tượng ứng dụng với nhãn bên dưới khi kết quả chỉ bao gồm ứng dụng",
+          "label": "Hiển thị ứng dụng dạng lưới"
         },
         "launcher-pinned-apps": {
           "label": "Ứng dụng đã được ghim"

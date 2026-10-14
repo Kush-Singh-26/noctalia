@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <utility>
 
 namespace {
   constexpr Logger kLog("http");
@@ -113,8 +114,11 @@ namespace {
   }
 } // namespace
 
-void HttpClient::applyCommonOptions(CURL* easy) {
+void HttpClient::applyCommonOptions(CURL* easy) const {
   curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
+  if (!m_caBundlePath.empty()) {
+    curl_easy_setopt(easy, CURLOPT_CAINFO, m_caBundlePath.c_str());
+  }
   // With the threaded resolver, curl reports a DNS timeout while its getaddrinfo() thread is
   // still blocked. Without this, curl_easy_cleanup() joins that thread and stalls the main loop
   // for as long as the resolver takes. CURLOPT_QUICK_EXIT detaches it instead: the abandoned
@@ -122,7 +126,7 @@ void HttpClient::applyCommonOptions(CURL* easy) {
   curl_easy_setopt(easy, CURLOPT_QUICK_EXIT, 1L);
 }
 
-HttpClient::HttpClient() {
+HttpClient::HttpClient(std::filesystem::path caBundlePath) : m_caBundlePath(std::move(caBundlePath)) {
   curl_global_init(CURL_GLOBAL_DEFAULT);
   m_multi = curl_multi_init();
 }

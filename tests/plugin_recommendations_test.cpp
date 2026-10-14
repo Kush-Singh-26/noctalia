@@ -81,13 +81,14 @@ namespace {
     TEST_CHECK(!PluginRecommendations::parseMetrics("<html>proxy failure</html>").has_value());
   }
 
-  void httpTests() {
+  void httpTests(std::filesystem::path caBundlePath) {
     const char* fixture = std::getenv("NOCTALIA_RECOMMENDATION_FIXTURE");
     TEST_CHECK(fixture != nullptr && std::string_view(fixture) == "1");
     const char* proxy = std::getenv("HTTPS_PROXY");
     TEST_CHECK(proxy != nullptr && std::string_view(proxy).starts_with("http://127.0.0.1:"));
     ConfigService config;
-    HttpClient http;
+    TEST_CHECK(!caBundlePath.empty() && std::filesystem::is_regular_file(caBundlePath));
+    HttpClient http(std::move(caBundlePath));
     scripting::PluginManager manager(config);
     const auto sources = defaultPluginSources();
     const auto& source = sources[0];
@@ -259,7 +260,8 @@ int main(int argc, char** argv) {
     return 0;
   }
   protocolTests();
-  if (argc == 2 && std::string_view(argv[1]) == "--http") {
-    httpTests();
+  if (argc >= 2 && std::string_view(argv[1]) == "--http") {
+    TEST_CHECK(argc == 3);
+    httpTests(argv[2]);
   }
 }

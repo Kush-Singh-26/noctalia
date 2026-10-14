@@ -82,6 +82,8 @@ struct WaylandOutput {
   std::int32_t logicalX = 0;
   std::int32_t logicalY = 0;
   std::int32_t transform = 0;
+  // wlr-output-management transform, when published for this output.
+  std::optional<std::int32_t> headTransform;
   zxdg_output_v1* xdgOutput = nullptr;
   bool done = false;
   // wlr-output-management fixed scale factor for this output (0 == not reported).
@@ -93,6 +95,8 @@ struct WaylandOutput {
   [[nodiscard]] float configuredScale() const noexcept {
     return static_cast<float>(configuredScaleNumerator) / static_cast<float>(wayland::kScaleNumeratorBase);
   }
+
+  [[nodiscard]] std::int32_t effectiveTransform() const noexcept { return headTransform.value_or(transform); }
 
   [[nodiscard]] std::int32_t effectiveLogicalWidth() const noexcept {
     if (logicalWidth > 0) {
@@ -129,6 +133,7 @@ struct WaylandOutputHeadInfo {
   std::string serialNumber;
   // wlr-output-management fixed scale factor (0 == not reported by this head).
   double scaleFactor = 0.0;
+  std::optional<std::int32_t> transform;
 };
 
 class WaylandConnection {
@@ -230,7 +235,6 @@ public:
   [[nodiscard]] bool hasXdgActivation() const noexcept;
   [[nodiscard]] std::string requestActivationToken(wl_surface* surface) const;
   void activateSurface(wl_surface* surface);
-  void activateToplevelForAppId(std::string_view appId);
 
   [[nodiscard]] std::optional<ActiveToplevel> activeToplevel() const;
   [[nodiscard]] std::optional<ActiveToplevel>
@@ -298,6 +302,7 @@ public:
   void onOutputHeadSerialNumber(zwlr_output_head_v1* head, const char* serialNumber);
   void onOutputHeadMode(zwlr_output_head_v1* head, zwlr_output_mode_v1* mode);
   void onOutputHeadScale(zwlr_output_head_v1* head, double scaleFactor);
+  void onOutputHeadTransform(zwlr_output_head_v1* head, std::int32_t transform);
   void onOutputModeFinished(zwlr_output_mode_v1* mode);
   void onOutputHeadFinished(zwlr_output_head_v1* head);
   // wl_output.name and the done event race; call from both sides to match either order.

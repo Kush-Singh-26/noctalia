@@ -135,7 +135,7 @@ void Application::initUi() {
 void Application::initUiRenderSurfacesAndSettings() {
 
   m_renderContext.initialize(m_glShared);
-  m_renderContext.setGraphicsResetCallback([this](RenderGraphicsResetStatus status) { onGraphicsReset(status); });
+  m_glShared.setGraphicsResetCallback([this](RenderGraphicsResetStatus status) { onGraphicsReset(status); });
   if (!m_glShared.hasSharedContext()) {
     m_asyncTextureCache.setMakeCurrentCallback([this]() { m_renderContext.backend().makeCurrentNoSurface(); });
   }
@@ -469,6 +469,7 @@ void Application::initInputDispatch() {
   });
   m_wayland.setKeyboardModifiersCallback([this](std::uint32_t modifiers) {
     m_windowSwitcher.onKeyboardModifiers(modifiers);
+    m_screenshotService.onModifiersChanged();
   });
   m_wayland.setKeyboardEventCallback([this](const KeyboardEvent& event) {
     if (m_lockScreen.isActive()) {
@@ -632,7 +633,8 @@ void Application::initPanelManagerAndPanels() {
   ControlCenterPanel* controlCenterPanelPtr = controlCenterPanel.get();
   m_panelManager.registerPanel("control-center", std::move(controlCenterPanel));
   {
-    auto launcherPanel = std::make_unique<LauncherPanel>(&m_configService, &m_asyncTextureCache);
+    auto launcherPanel =
+        std::make_unique<LauncherPanel>(&m_configService, m_accountsService.get(), &m_asyncTextureCache);
     launcherPanel->addProvider(std::make_unique<AppProvider>(&m_configService, &m_compositorPlatform));
     launcherPanel->addProvider(std::make_unique<WallpaperProvider>(&m_configService, &m_wayland, &m_themeService));
     launcherPanel->addProvider(std::make_unique<WindowProvider>(&m_compositorPlatform));
@@ -661,7 +663,7 @@ void Application::initPanelManagerAndPanels() {
   m_configService.addReloadCallback(
       [this]() {
         if (m_launcherPanel != nullptr) {
-          m_launcherPanel->syncUsageTrackingState();
+          m_launcherPanel->syncUsageOrderingState();
         }
       },
       "launcher-usage"

@@ -226,7 +226,9 @@
       "auto": "自动",
       "custom": "自定义",
       "inherit": "继承",
-      "off": "关闭"
+      "inherit-value": "继承（{value}）",
+      "off": "关闭",
+      "on": "开启"
     }
   },
   "control-center": {
@@ -551,7 +553,10 @@
         "select-sticker-image": "选择贴纸图片"
       },
       "settings": {
+        "album-art-background": "专辑封面背景",
+        "album-art-blur": "专辑封面模糊",
         "aspect-ratio": "纵横比",
+        "audio-visualizer": "音频可视化",
         "background": "背景",
         "background-color": "颜色",
         "background-opacity": "不透明度",
@@ -888,6 +893,15 @@
       "lockscreen-widgets-editor-blocked-locked": "请在编辑锁屏小组件之前解锁会话。",
       "lockscreen-widgets-editor-enabled": "锁屏小组件编辑器已开启。请切换至空工作区，避免打开的窗口遮挡编辑器。",
       "mpris-disabled": "MPRIS 已禁用",
+      "network": "网络",
+      "network-connect-failed-auth": "密码被拒绝或未提供。",
+      "network-connect-failed-generic": "NetworkManager 无法完成连接。",
+      "network-connect-failed-ip": "已连接到网络，但无法获取 IP 地址。",
+      "network-connect-failed-no-reply": "NetworkManager 未响应。可能有授权请求正在等待，但没有 polkit 代理来响应。",
+      "network-connect-failed-not-found": "网络已不在范围内。",
+      "network-connect-failed-permission": "无权更改网络连接。请在“安全”设置中启用 polkit 代理，或在 polkit 规则中允许 NetworkManager 操作。",
+      "network-connect-failed-timeout": "网络未及时响应。",
+      "network-connect-failed-title": "无法连接到 {ssid}",
       "polkit-agent": "Polkit 代理",
       "polkit-no-session": "Polkit 代理需要 logind、elogind 或 XDG_SESSION_ID。在仅使用 seatd 的环境中无法注册图形化身份验证提示。请使用终端 pkexec 完成 Greeter 同步，或安装 elogind 以支持会话内身份验证。",
       "screen-time-reset": "屏幕时间",
@@ -1701,14 +1715,27 @@
         "installed": "已安装",
         "loading": "正在加载目录…",
         "no-readme": "没有可用的描述。",
+        "not-listed": "未列出",
         "open-page": "在 noctalia.dev 上打开插件页面",
         "open-source": "打开插件源码仓库",
+        "recommend": "推荐",
+        "recommendation-error": "更改未确认。您之前的推荐保持不变。请重试相同更改以同步状态。",
+        "recommendation-not-recommendable": "此插件无法接受此推荐。",
+        "recommendation-pending": "正在发送推荐…",
+        "recommendation-protocol-error": "服务返回了意外响应。您之前的推荐保持不变。",
+        "recommendation-rate-limited": "请求过多。请稍候再重试此更改。",
+        "recommendation-retry": "重试推荐更改",
+        "recommendation-state-error": "无法读取或保存推荐状态。请检查 state.toml 后重试。",
+        "recommendation-unavailable": "推荐暂时不可用。您之前的推荐保持不变。您可以稍后重试。",
+        "remove-recommendation": "取消推荐",
         "results-count": "共 {count} 个插件",
         "search-placeholder": "搜索插件…",
         "sort-added-at-asc": "按添加日期排序（最旧优先）",
         "sort-added-at-desc": "按添加日期排序（最新优先）",
+        "sort-most-recommended": "最多推荐",
         "sort-name-asc": "按名称排序（A-Z）",
         "sort-name-desc": "按名称排序（Z-A）",
+        "sort-trending": "热门",
         "sort-updated-at-asc": "按更新日期排序（最旧优先）",
         "sort-updated-at-desc": "按更新日期排序（最新优先）",
         "source-all": "全部",
@@ -1974,6 +2001,10 @@
         "show-on-workspace-switch": {
           "description": "切换活动工作区时短暂显示状态栏",
           "label": "切换工作区时显示"
+        },
+        "show-tooltip": {
+          "description": "显示此状态栏上小组件的悬停提示；小组件自身的“显示提示”设置将覆盖此项",
+          "label": "显示提示"
         },
         "start-widgets": {
           "description": "状态栏起始（左侧/顶部）的小组件",
@@ -2349,6 +2380,10 @@
           "description": "通过 fprintd 使用指纹识别器解锁，同时保留密码登录",
           "label": "指纹解锁"
         },
+        "grace-period": {
+          "description": "锁定后允许在此时长内免密码解锁；按下任意键或移动鼠标即可解锁。设为 0 时始终需要密码",
+          "label": "宽限期"
+        },
         "lock-before-suspend": {
           "description": "系统进入睡眠状态前锁定会话（如合盖、执行 systemctl suspend 或休眠）；“锁定并挂起”操作仍会先锁定会话",
           "label": "挂起前锁定"
@@ -2478,6 +2513,14 @@
         }
       },
       "panels": {
+        "border-color": {
+          "description": "悬浮面板的轮廓颜色；主题角色名称跟随当前主题，或选择自定义颜色",
+          "label": "边框颜色"
+        },
+        "border-width": {
+          "description": "悬浮面板的轮廓宽度（像素），设为 0 时隐藏边框",
+          "label": "边框宽度"
+        },
         "borders": {
           "description": "为悬浮面板绘制轮廓",
           "label": "边框"
@@ -2522,10 +2565,6 @@
           "description": "在搜索结果中同时显示应用及其操作项",
           "label": "显示应用操作"
         },
-        "launcher-app-grid": {
-          "description": "当搜索结果仅包含应用时，以网格形式显示应用图标，并在图标下方显示名称",
-          "label": "应用网格视图"
-        },
         "launcher-app-origin-indicator": {
           "description": "在应用搜索结果中显示软件包来源标识",
           "label": "显示应用来源标识"
@@ -2569,6 +2608,10 @@
         "launcher-global-windows": {
           "description": "在无前缀搜索中显示打开的窗口",
           "label": "全局搜索中的窗口"
+        },
+        "launcher-grid": {
+          "description": "当搜索结果仅包含应用时，以网格形式显示应用图标，并在图标下方显示名称",
+          "label": "应用网格视图"
         },
         "launcher-ignored-panels": {
           "description": "面板搜索源不会列出的面板（例如身份验证提示、设置向导）",
@@ -2705,6 +2748,10 @@
         "transparency-mode": {
           "description": "面板透明效果，包括悬浮面板的不透明度和卡片的半透明效果",
           "label": "透明效果"
+        },
+        "wallpaper-show-names": {
+          "description": "在壁纸选择器中为每个缩略图标注文件名。",
+          "label": "显示文件名"
         }
       },
       "power": {
@@ -2748,6 +2795,14 @@
           "description-opening": "正在通过 Secret Service 访问日历凭据",
           "description-unavailable": "当前会话中没有可用的 Secret Service 提供程序",
           "label": "日历凭据存储"
+        },
+        "calendar-dedupe-events": {
+          "description": "将出现在多个日历中的同一日程合并为单条记录",
+          "label": "合并重复日程"
+        },
+        "calendar-dedupe-ignore-patterns": {
+          "description": "在比较前从日程标题中移除的正则表达式，使仅匹配部分不同的标题仍能合并",
+          "label": "合并时忽略标题中的匹配项"
         },
         "calendar-digest-time": {
           "description": "每天发送全天日程汇总通知的时间；留空时禁用",
@@ -2857,8 +2912,20 @@
           "label": "通知音效",
           "placeholder": "/path/to/sound.wav"
         },
+        "notification-sounds": {
+          "description": "通知到达时播放声音",
+          "label": "通知声音"
+        },
+        "power-sounds": {
+          "description": "充电器连接或断开时播放声音",
+          "label": "电源声音"
+        },
+        "screenshot-sounds": {
+          "description": "截图时播放声音",
+          "label": "截图声音"
+        },
         "shell-sounds": {
-          "description": "为 Shell 事件播放音效",
+          "description": "Shell 音效的总开关",
           "label": "Shell 音效"
         },
         "sound-theme": {
@@ -2931,6 +2998,10 @@
           "description": "音量反馈的音效文件",
           "label": "音量变化音效",
           "placeholder": "/path/to/sound.wav"
+        },
+        "volume-sounds": {
+          "description": "输出或输入音量变化时播放声音",
+          "label": "音量声音"
         },
         "weather": {
           "description": "启用天气服务，数据来自 open-meteo.com",
@@ -4280,6 +4351,10 @@
           "description": "隐藏的托盘项 ID",
           "label": "隐藏托盘项"
         },
+        "hidden-workspaces": {
+          "description": "窗口不显示在任务栏中的工作区名称，除非该工作区为活动状态",
+          "label": "隐藏的工作区"
+        },
         "hide-album-art": {
           "description": "隐藏专辑封面",
           "label": "隐藏专辑封面"
@@ -4312,6 +4387,10 @@
         "hide-when-full": {
           "description": "电池充满时隐藏电池小组件",
           "label": "充满时隐藏"
+        },
+        "hide-when-idle": {
+          "description": "活动的 MPRIS 播放器暂停或停止时隐藏小组件",
+          "label": "空闲时隐藏"
         },
         "hide-when-inactive": {
           "description": "没有应用正在录音时隐藏麦克风小组件",
@@ -4573,8 +4652,8 @@
           "label": "显示气温"
         },
         "show-tooltip": {
-          "description": "工作区标签未完整显示名称时，悬停可显示完整名称",
-          "label": "显示名称提示"
+          "description": "悬停时显示此小组件的提示",
+          "label": "显示提示"
         },
         "show-unlock-hint": {
           "description": "在登录框上方显示状态卡片，提示解锁和身份验证；关闭后仍会显示错误信息和大写锁定提示",

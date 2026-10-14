@@ -1646,8 +1646,19 @@ void PipeWireService::onNodeParam(
     return;
   }
 
-  // Props volume/mute is authoritative only for program streams; device nodes use mixer-api.
+  // Props volume/mute is authoritative only for program streams; device nodes use mixer-api. Route-less
+  // virtual sources still report their monitor-port mute here, which mixer-api does not track.
   if (isDeviceNode) {
+    if (nd.mediaClass == "Audio/Source" && !nd.hasRoute) {
+      if (const spa_pod_prop* prop = spa_pod_find_prop(param, nullptr, SPA_PROP_monitorMute); prop != nullptr) {
+        bool monitorMuted = false;
+        if (spa_pod_get_bool(&prop->value, &monitorMuted) == 0 && monitorMuted != nd.monitorMute) {
+          nd.monitorMute = monitorMuted;
+          recomputeEffectiveMute(nd);
+          rebuildState();
+        }
+      }
+    }
     return;
   }
 
@@ -2121,7 +2132,8 @@ void PipeWireService::recomputeEffectiveMute(NodeData& nd) {
   }
 
   const bool deviceRouteMuted = deviceRoute != nullptr && deviceRoute->muted;
-  const bool newMuted = nd.swMute || routeMuted || deviceRouteMuted;
+  const bool monitorMuted = nd.mediaClass == "Audio/Source" && nodeRoute == nullptr && nd.monitorMute;
+  const bool newMuted = nd.swMute || routeMuted || deviceRouteMuted || monitorMuted;
   // Diagnostic for Bluetooth: route/device mute can silently mute the earbud while the slider
   // still shows unmuted. Log once when it becomes the effective mute source.
   if (newMuted != nd.muted || (newMuted && !nd.swMute && (routeMuted || deviceRouteMuted))) {
@@ -2288,12 +2300,23 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
     return;
   }
 
-  // Device nodes with a hardware route go through WirePlumber's mixer-api to keep pipewire-pulse /
-  // pavucontrol in sync. Route-less virtual sources also need the direct SPA node mute below: the mixer
-  // write can update the optimistic UI state without stopping capture in the virtual filter graph.
+  // Device nodes go through WirePlumber's mixer-api to keep pipewire-pulse / pavucontrol in sync.
+  // Route-less virtual sources (e.g. EasyEffects) are captured from monitor ports, which ignore the
+  // SPA_PROP_mute that mixer-api writes, so they also need SPA_PROP_monitorMute to stop capture.
   const bool isDeviceNode = nd.mediaClass == "Audio/Sink" || nd.mediaClass == "Audio/Source";
+  const bool isRoutelessSource = nd.mediaClass == "Audio/Source" && !nd.hasRoute;
   if (isDeviceNode && m_wpMixer != nullptr) {
     m_wpMixer->setMuted(id, muted);
+    if (isRoutelessSource) {
+      std::uint8_t monitorBuffer[128];
+      spa_pod_builder monitorBuilder;
+      spa_pod_builder_init(&monitorBuilder, monitorBuffer, sizeof(monitorBuffer));
+      auto* monitorPod = static_cast<spa_pod*>(spa_pod_builder_add_object(
+          &monitorBuilder, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props, SPA_PROP_monitorMute, SPA_POD_Bool(muted)
+      ));
+      pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, monitorPod);
+      nd.monitorMute = muted;
+    }
     const bool before = nd.muted;
     nd.swMute = muted;
     recomputeEffectiveMute(nd);
@@ -2305,9 +2328,7 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
       }
       rebuildState();
     }
-    if (nd.hasRoute) {
-      return;
-    }
+    return;
   }
 
   // Program streams, and device nodes for immediate local/UI consistency.
@@ -2344,12 +2365,19 @@ void PipeWireService::setNodeMuted(std::uint32_t id, bool muted) {
   spa_pod_builder_push_object(&builder, &frame, SPA_TYPE_OBJECT_Props, SPA_PARAM_Props);
   spa_pod_builder_prop(&builder, SPA_PROP_mute, 0);
   spa_pod_builder_bool(&builder, muted);
+  if (isRoutelessSource) {
+    spa_pod_builder_prop(&builder, SPA_PROP_monitorMute, 0);
+    spa_pod_builder_bool(&builder, muted);
+  }
   auto* pod = static_cast<spa_pod*>(spa_pod_builder_pop(&builder, &frame));
 
   pw_node_set_param(nd.proxy, SPA_PARAM_Props, 0, pod);
 
   const bool before = nd.muted;
   nd.swMute = muted;
+  if (isRoutelessSource) {
+    nd.monitorMute = muted;
+  }
   if (nd.hasRoute && nd.routeIndex >= 0) {
     nd.nodeRouteMute = muted;
   }

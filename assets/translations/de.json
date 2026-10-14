@@ -2335,10 +2335,6 @@
           "description": "Zeige App-Aktionseinträge neben Apps in den Ergebnissen an",
           "label": "App-Aktionen anzeigen"
         },
-        "launcher-app-grid": {
-          "description": "Zeige ein Raster von App-Icons mit Beschriftungen darunter, wenn die Ergebnisse ausschließlich Apps sind",
-          "label": "App-Rasteransicht"
-        },
         "launcher-app-origin-indicator": {
           "description": "Zeige Paketherkunft-Indikatoren bei App-Ergebnissen an",
           "label": "App-Herkunft-Indikatoren anzeigen"
@@ -2378,6 +2374,10 @@
         "launcher-global-windows": {
           "description": "Zeige offene Fenster auch in der unpräfixierten Suche",
           "label": "Fenster in globaler Suche"
+        },
+        "launcher-grid": {
+          "description": "Zeige ein Raster von App-Icons mit Beschriftungen darunter, wenn die Ergebnisse ausschließlich Apps sind",
+          "label": "App-Rasteransicht"
         },
         "launcher-pinned-apps": {
           "description": "Desktop-Entry-IDs von Apps, die im Launcher angeheftet sind; sie erscheinen zuerst, wenn der Launcher geöffnet wird",

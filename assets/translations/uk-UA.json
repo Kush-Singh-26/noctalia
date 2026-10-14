@@ -226,7 +226,9 @@
       "auto": "Авто",
       "custom": "Користувацький",
       "inherit": "Успадкувати",
-      "off": "Вимк."
+      "inherit-value": "Успадкувати ({value})",
+      "off": "Вимк.",
+      "on": "Увімкнено"
     }
   },
   "control-center": {
@@ -551,7 +553,10 @@
         "select-sticker-image": "Обрати зображення стікера"
       },
       "settings": {
+        "album-art-background": "Фон обкладинки альбому ",
+        "album-art-blur": "Розмиття обкладинки альбому",
         "aspect-ratio": "Співвідношення сторін",
+        "audio-visualizer": "Аудіовізуалізатор",
         "background": "Тло",
         "background-color": "Колір",
         "background-opacity": "Непрозорість",
@@ -610,6 +615,7 @@
         "opacity": "Непрозорість",
         "primary-color": "Основний колір",
         "reset-defaults": "Повернути початкові",
+        "reversed": "Зворотний",
         "ring-opacity": "Непрозорість кільця",
         "rotation-speed": "Швидкість обертання",
         "scroll-step": "Крок прокручування",
@@ -649,6 +655,7 @@
         "track-color": "Колір доріжки",
         "variant": "Стиль",
         "variant-default": "Типовий",
+        "variant-destructive": "Деструктивний",
         "variant-ghost": "Без контуру й заповнення",
         "variant-outline": "Лише контур",
         "variant-primary": "Основний",
@@ -775,6 +782,7 @@
           "launcher": "Запускач",
           "polkit": "Запит автентифікації",
           "session": "Сеанс",
+          "test": "Тестова панель",
           "wallpaper": "Тло екрана"
         },
         "title": "Панелі"
@@ -836,8 +844,12 @@
       "battery-low-body": "{device}: залишилося {percent}%",
       "battery-low-title": "Низький заряд акумулятора",
       "calendar": "Календар",
+      "calendar-credential-locked-body": "Розблокуйте сховище ключів, яке використовує Secret Service, а потім повторіть спробу в налаштуваннях. Якщо ви використовуєте GNOME Keyring, установіть сховище ключів, яке розблоковується автоматично, наприклад Login, як сховище за замовчуванням.",
       "calendar-credential-locked-title": "Сховище ключів календаря заблоковано",
+      "calendar-digest-more": "+{count} більше",
+      "calendar-digest-title": "Сьогодні весь день",
       "calendar-google-connect-browser-failed": "Не вдалося запустити браузер для авторизації Google. Перевірте свій типовий браузер або налаштування xdg-open.",
+      "calendar-google-connect-credential-store-failed": "Авторизацію завершено, але не вдалося зберегти токен оновлення. Розблокуйте сховище ключів або запустіть Secret Service, а потім підключіться знову.",
       "calendar-google-connect-expired": "Термін дії авторизації Google вичерпався до виконання входу. Спробуйте з'єднатися знову.",
       "calendar-google-connect-failed-title": "З'єднання з Google Календарем не вдалося",
       "calendar-google-connect-missing-account": "Жоден налаштований обліковий запис Google Календаря не відповідає \"{account}\".",
@@ -846,13 +858,28 @@
       "calendar-google-connect-start-failed": "Не вдалося розпочати авторизацію Google. Перевірте своє мережеве з'єднання та спробуйте ще раз.",
       "calendar-google-connect-start-http": "Не вдалося запустити авторизацію Google. Брокер OAuth повернув HTTP {status}.",
       "calendar-google-connect-timeout": "Час очікування авторизації Google вичерпано. Спробуйте з'єднатися знову, коли будете готові ввійти.",
+      "calendar-reminder-catchup-body": "{count} більше подій починаються скоро.",
+      "calendar-reminder-catchup-title": "Більше майбутніх подій",
+      "calendar-reminder-in": "Починається через {minutes} хвилин · {time}",
+      "calendar-reminder-now": "Починається зараз · {time}",
+      "calendar-reminder-open": "Відкрити",
+      "calendar-reminder-untitled": "Подія без назви",
+      "calendar-reminder-with-location": "",
+      "config-migration-body": "Оновіть {path} у вихідному файлі. Noctalia застосовує цю заміну лише тимчасово. Виконайте команду \"noctalia config validate\", щоб переглянути всі необхідні зміни.",
       "config-migration-title": "Потрібно оновити конфігурацію",
       "dbus-disabled": "Сповіщення DBus вимкнено",
       "desktop-widgets-editor": "Редактор віджетів",
       "desktop-widgets-editor-enabled": "Редактор віджетів робочого столу увімкнено. Перейди на порожній робочий простір, щоб побачити оверлей редактора.",
       "greeter-sync": "Вітальний екран Noctalia",
       "greeter-sync-pending": "Синхронізація вигляду з greeter. Якщо з’явиться запит адміністратора, підтвердьте його; авторизація без пароля залежить від системної політики.",
+      "greeter-sync-pending-console": "Синхронізація зовнішнього вигляду з екраном входу. Якщо потрібна авторизація, підтвердьте запит polkit у Noctalia, у TTY або в консолі.",
+      "greeter-sync-pending-legacy": "Синхронізація через автентифікований застарілий допоміжний засіб. Потрібне підтвердження адміністратора.",
+      "greeter-sync-pending-manual": "Файли підготовлено для синхронізації через автентифікований застарілий механізм. Запустіть допоміжну команду застосування з позиційними аргументами в терміналі, зберігши значення NOCTALIA_GREETER_STATE_DIR, якщо використовуєте власний шлях, або налаштуйте shell.greeter_sync.privilege_command і повторіть синхронізацію.",
+      "greeter-sync-pending-manual-pkexec": "Синхронізація зовнішнього вигляду з екраном входу. Якщо потрібна авторизація адміністратора, але запит не з’являється, виконайте в терміналі: pkexec noctalia-greeter-apply-appearance --sync \"/run/user/$(id -u)/noctalia-greeter-sync\".",
       "greeter-sync-success": "Оформлення синхронізовано. Зміни будуть застосовані при наступному екрані входу.",
+      "greeter-sync-timeout": "Синхронізація з екраном входу все ще очікує на авторизацію. Перевірте, чи є запит polkit у TTY або консолі, увімкніть агент polkit у налаштуваннях безпеки або виконайте команду pkexec вручну.",
+      "greeter-sync-timeout-manual": "Для синхронізації через автентифікований застарілий механізм усе ще потрібне підтвердження адміністратора. Запустіть допоміжну команду застосування з позиційними аргументами в терміналі та збережіть значення NOCTALIA_GREETER_STATE_DIR, якщо використовуєте власний шлях.",
+      "greeter-sync-timeout-manual-pkexec": "Для синхронізації з екраном входу все ще потрібна авторизація. Виконайте в терміналі: pkexec noctalia-greeter-apply-appearance --sync \"/run/user/$(id -u)/noctalia-greeter-sync\"",
       "keybind-app": "Noctalia",
       "keybind-invalid-modifier": "Це поєднання клавіш приймає одну клавішу без модифікаторів.",
       "keybind-invalid-printable": "Клавіші з друкованими символами (літери, цифри тощо) працюватимуть лише з модифікатором, як-от Ctrl або Alt.",
@@ -864,6 +891,15 @@
       "lockscreen-widgets-editor-blocked-locked": "Розблокуйте сеанс, перш ніж редагувати віджети екрана блокування.",
       "lockscreen-widgets-editor-enabled": "Редагування віджетів на екрані блокування розпочато. Розташовуйте віджети на шарі попереднього перегляду, а потім заблокуйте сеанс, щоб перевірити їх розташування.",
       "mpris-disabled": "MPRIS вимкнено",
+      "network": "Мережа",
+      "network-connect-failed-auth": "Пароль відхилено або не надано.",
+      "network-connect-failed-generic": "NetworkManager не зміг завершити підключення.",
+      "network-connect-failed-ip": "Підключено до мережі, але не вдалося отримати IP-адресу.",
+      "network-connect-failed-no-reply": "NetworkManager не відповів. Можливо, є запит на авторизацію, на який немає агента polkit, який міг би відповісти.",
+      "network-connect-failed-not-found": "Мережа більше не знаходиться в зоні дії.",
+      "network-connect-failed-permission": "Немає прав на зміну мережевих підключень. Увімкніть агент polkit у налаштуваннях «Безпека» або дозвольте дії NetworkManager у правилі polkit.",
+      "network-connect-failed-timeout": "Мережа не відповіла вчасно.",
+      "network-connect-failed-title": "Не вдалося підключитися до {ssid}",
       "polkit-agent": "Агент Polkit",
       "polkit-no-session": "Агентові Polkit треба logind, elogind або XDG_SESSION_ID. У системах, що працюють виключно на seatd він не може показувати запити у вікні. Щоб синхронізувати вітальний екран із оболонкою, користуйтеся pkexec у консолі чи встановіть elogind, щоб показувати вікно із запитом у сеансі.",
       "screen-time-reset": "Екранний час",
@@ -886,6 +922,10 @@
       "off": "Сповіщення увімкнено",
       "on": "Сповіщення вимкнено"
     },
+    "effects": {
+      "input": "Ефекти введення",
+      "output": "Ефекти виведення"
+    },
     "lock-keys": {
       "caps-off": "Caps Lock вимкнено",
       "caps-on": "Caps Lock увімкнено",
@@ -895,7 +935,9 @@
       "scroll-on": "Scroll Lock увімкнено"
     },
     "nightlight": {
+      "forced": "Завжди увімкнено",
       "off": "Нічний режим вимкнено",
+      "running": "Виконається",
       "scheduled": "За розкладом"
     },
     "privacy": {
@@ -986,6 +1028,7 @@
       "color-label": "Колір",
       "credential-source-file": "Файл із паролями",
       "credential-source-keyring": "Сховище ключів",
+      "credential-source-label": "Сховище облікових даних",
       "delete-error": "Не вдалося видалити обліковий запис календаря.",
       "edit-title": "Редагувати обліковий запис календаря",
       "ics-url-label": "URL-адреса файла ICS",
@@ -994,6 +1037,7 @@
       "name-label": "Ім'я для відображення",
       "name-placeholder": "Особистий календар",
       "password-file-error": "Не вдалося прочитати вказаний файл із паролями. Перевірте, чи існує він, чи доступний він для читання, і чи міститься в ньому пароль.",
+      "password-file-label": "Файл паролів",
       "password-keep-placeholder": "Залиш порожнім, щоб зберегти поточний пароль.",
       "password-label": "Пароль додатка",
       "password-placeholder": "Пароль для додатка",
@@ -1002,12 +1046,18 @@
         "custom": "CalDAV",
         "google": "Google",
         "icloud": "iCloud",
-        "ics": "URL-адреса файла ICS"
+        "ics": "URL-адреса файла ICS",
+        "vdir": "Локальне (vdir)"
       },
       "provider-label": "Провайдер",
       "save": "Зберегти",
       "save-connect": "Зберегти та підключитися",
       "save-error": "Не вдалося зберегти обліковий запис календаря.",
+      "secret-cleanup-error": "Не вдалося зберегти обліковий запис, а також відновити або видалити його облікові дані зі сховища ключів. Повторіть спробу після розблокування Secret Service.",
+      "secret-service-cancelled": "Запит Secret Service було скасовано. Повторіть спробу, коли будете готові розблокувати сховище ключів.",
+      "secret-service-error": "Не вдалося отримати доступ до облікових даних календаря в Secret Service. Повторіть спробу.",
+      "secret-service-locked": "Облікові дані календаря заблоковано або в доступі відмовлено. Розблокуйте Secret Service та повторіть спробу.",
+      "secret-service-unavailable": "Провайдер Secret Service недоступний. Запустіть сумісний провайдер і повторіть спробу.",
       "server-url-label": "URL-адреса сервера",
       "username-label": "Ім'я користувача",
       "username-placeholder": "name@example.com",
@@ -1043,7 +1093,7 @@
         "delete-confirm-title": "Видалити «{name}»?",
         "id-placeholder": "Ідентифікатор панелі",
         "label": "Панель: {name}",
-        "management": "",
+        "management": "Панель",
         "move-down": "Перемістити вниз",
         "move-up": "Перемістити вгору",
         "new": "Нова панель",
@@ -1052,13 +1102,16 @@
       },
       "monitor-override": {
         "create": "Створити",
+        "custom": "Індивідуальний",
         "delete": "Видалити",
         "delete-confirm-desc": "Змінені через за допомогою графічного інтерфейса параметри для окремого монітора будуть прибрані з файлу settings.toml.",
         "delete-confirm-title": "Видалити «{name}»?",
+        "exists": "Перевизначення для цього монітора вже існує.",
         "label": "Монітор: {name}",
         "management": "Змінити на моніторі",
         "match-placeholder": "Введи монітор",
         "new": "Зміни для монітора",
+        "new-title": "Нове перевизначення монітора",
         "rename": "Перейменувати",
         "rename-save": "Зберегти"
       },
@@ -1072,16 +1125,23 @@
           "title": "Віджети панелі"
         },
         "group": {
+          "accordion": "Акордеон",
           "accordion-description": "Показувати тільки перший віджет; наведення курсором покаже решту",
           "accordion-direction": "Напрямок розгортання",
           "accordion-direction-description": "З якого боку першого віджета будуть розгортатися приховані.",
           "action": "Група",
           "border": "Контур",
           "border-description": "Роль кольору обведення капсули; залиште за замовчуванням для відсутності обведення",
+          "border-width": "Ширина межі",
+          "border-width-description": "Товщина контуру капсули в пікселях; відображається лише тоді, коли задано колір межі.",
           "clear": "Очистити",
           "deselect": "Зняти вибір",
           "drag": "Змінити порядок",
+          "drawer-columns": "Кількість стовпців висувної панелі",
+          "drawer-columns-description": "Кількість віджетів у рядку висувної панелі",
           "drawer-detached": "Окрема панель",
+          "drawer-detached-description": "Відкривати висувну панель як окрему плаваючу панель із власним фоном, а не об’єднувати її з основною панеллю",
+          "drawer-enabled": "Висувна панель",
           "drawer-enabled-description": "Вкласти згруповані віджети в \"шухляду\" яку можна розкрити кнопкою",
           "drawer-glyph-closed": "Іконка коли закрито",
           "drawer-glyph-closed-description": "Іконка на перемикачі \"шухляди\" коли її закрито",
@@ -1199,6 +1259,8 @@
       "support-report": "Не вдалося зберегти звіт підтримки.",
       "sync-greeter": "Не вдалося синхронізувати вигляд з Noctalia Greeter.",
       "sync-greeter-timeout": "Синхронізація з екраном входу ще чекає на авторизацію. Перевір усі TTY або термінали на запит від Polkit, увімкни агент Polkit в налаштуваннях безпеки, або виконай pkexec вручну.",
+      "sync-greeter-timeout-manual": "Для синхронізації через автентифікований застарілий механізм усе ще потрібне підтвердження адміністратора. Запустіть допоміжну команду застосування з позиційними аргументами в терміналі та збережіть значення \"NOCTALIA_GREETER_STATE_DIR\", якщо використовуєте власний шлях.",
+      "sync-greeter-timeout-manual-pkexec": "Для синхронізації з екраном входу все ще потрібна авторизація. Виконайте в терміналі: pkexec noctalia-greeter-apply-appearance --sync \"/run/user/$(id -u)/noctalia-greeter-sync\"",
       "widget": {
         "rename": "Не вдалося перейменувати іменований віджет."
       },
@@ -1227,6 +1289,7 @@
           "suspend": "Призупинити"
         },
         "kind-section-label": "Дія",
+        "locked-timeout-label": "Час очікування в заблокованому стані (секунди, 0 = вимкнено)",
         "name-label": "Ім'я",
         "name-placeholder": "Поведінка в режимі простою",
         "resume-command-label": "Команда відновлення",
@@ -1255,6 +1318,8 @@
         "borders": "Контури",
         "brightness": "Яскравість",
         "built-in": "Вбудований",
+        "calendar-accounts": "Профілі",
+        "calendar-reminders": "Нагадування",
         "capsules": "Капсули",
         "clipboard": "Буфер обміну",
         "community": "Спільнота",
@@ -1288,6 +1353,7 @@
         "monitor-thresholds": "Пороги підсвічування",
         "monitors": "Монітори",
         "motion": "Рух",
+        "navigation": "Навігація",
         "network": "Мережа",
         "night-light": "Нічний режим",
         "notifications": "Сповіщення",
@@ -1298,6 +1364,7 @@
         "power": "Живлення",
         "privacy": "Конфіденційність",
         "profile": "Профіль",
+        "providers": "Провайдери",
         "screen-corners": "Кути екрана",
         "screen-time": "Екранний час",
         "screenshot": "Знімок екрана",
@@ -1323,6 +1390,7 @@
         "appearance": "Вигляд",
         "backdrop": "Фон",
         "bar": "Панель",
+        "calendar": "Календар",
         "control-center": "Центр керування",
         "desktop": "Робочий стіл",
         "dock": "Док-панель",
@@ -1343,6 +1411,7 @@
         "shell": "Оболонка",
         "system": "Система",
         "templates": "Шаблони",
+        "umbriel": "Umbriel",
         "wallpaper": "Тло екрана"
       }
     },
@@ -1357,11 +1426,15 @@
           "dnd-bypass": "Навіть у режимі «Без сповіщень»",
           "history": "історія",
           "permanent": "висячі",
-          "sound": "звук"
+          "sound": "звук",
+          "toast": "Сповіщення"
         },
         "flags-label": "Повна відповідність",
         "match-content-label": "Регулярний вираз",
+        "match-content-placeholder": "Регулярний вираз для пошуку заголовка або основного тексту…",
         "match-label": "Програма",
+        "match-placeholder": "Назва програми, запис на робочому столі або категорія…",
+        "override-duration": "Перевизначити тривалість",
         "play-sound": "Грати звук",
         "save-history": "Зберегти до історії",
         "show-toast": "Спливне сповіщення",
@@ -1434,6 +1507,16 @@
         "overlay": "Накладка",
         "top": "Зверху"
       },
+      "lockscreen": {
+        "transition": {
+          "disc": "Диск",
+          "fade": "Поява з поступовим проявленням",
+          "honeycomb": "Стільники",
+          "stripes": "Смуги",
+          "wipe": "Витирання",
+          "zoom": "Масштабування"
+        }
+      },
       "notification-urgency": {
         "critical": "Критичний",
         "low": "Низький",
@@ -1449,6 +1532,12 @@
       },
       "panel-position": {
         "auto": "Біля панелі"
+      },
+      "plugins": {
+        "auto-update": {
+          "all": "Усі",
+          "none": "Немає"
+        }
       },
       "screen-position": {
         "bottom-center": "Унизу посередині",

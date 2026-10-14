@@ -226,7 +226,9 @@
       "auto": "Automatico",
       "custom": "Personalizzato",
       "inherit": "Eredita",
-      "off": "Disattivato"
+      "inherit-value": "Eredita ({value})",
+      "off": "Disattivato",
+      "on": "On"
     }
   },
   "control-center": {
@@ -551,7 +553,10 @@
         "select-sticker-image": "Seleziona immagine sticker"
       },
       "settings": {
+        "album-art-background": "Sfondo della copertina dell'album",
+        "album-art-blur": "Copertina dell'album sfocata",
         "aspect-ratio": "Proporzioni",
+        "audio-visualizer": "Visualizzatore audio",
         "background": "Sfondo",
         "background-color": "Colore",
         "background-opacity": "Opacità",
@@ -888,6 +893,15 @@
       "lockscreen-widgets-editor-blocked-locked": "Sblocca la sessione prima di modificare i widget del blocco schermo.",
       "lockscreen-widgets-editor-enabled": "L'editor dei widget della schermata di blocco è attivo. Passa a un'area di lavoro vuota in modo che le finestre aperte non coprano l'editor.",
       "mpris-disabled": "MPRIS disabilitato",
+      "network": "Rete",
+      "network-connect-failed-auth": "La password è stata rifiutata o non è stata fornita.",
+      "network-connect-failed-generic": "NetworkManager non è stato in grado di completare la connessione.",
+      "network-connect-failed-ip": "Connesso alla rete ma impossibile ottenere indirizzo IP",
+      "network-connect-failed-no-reply": "NetworkManager non ha risposto. Una richiesta di autorizzazione potrebbe stare aspettando senza risposta dall'agente polkit ",
+      "network-connect-failed-not-found": "La rete non è più nel raggio di copertura.",
+      "network-connect-failed-permission": "Non autorizzato a cambiare connessioni. Abilita l'agente polkit nelle impostazioni Sicurezza, o permetti azioni NetworkManager in una regola polkit.",
+      "network-connect-failed-timeout": "La rete non ha risposto in tempo.",
+      "network-connect-failed-title": "Impossibile connettersi a {ssid}",
       "polkit-agent": "Polkit Agent",
       "polkit-no-session": "L'agente Polkit necessita di logind, elogind o XDG_SESSION_ID. Nelle configurazioni seatd-only non è possibile registrarsi per i prompt grafici. Utilizza il terminale pkexec per la sincronizzazione del greeter o installa elogind per l'autenticazione in sessione.",
       "screen-time-reset": "Tempo schermo",
@@ -1701,14 +1715,27 @@
         "installed": "Installato",
         "loading": "Caricamento catalogo...",
         "no-readme": "Nessuna descrizione disponibile.",
+        "not-listed": "Non in elenco",
         "open-page": "Apri la pagina plugin su noctalia.dev",
         "open-source": "Apri il repository dei sorgenti dei plugin",
+        "recommend": "Raccomandato",
+        "recommendation-error": "Il cambiamento non è stato confermato. La tua raccomandazione precedente non è cambiata. Riprova lo stesso cambiamento per riconciliarlo.",
+        "recommendation-not-recommendable": "Questo plugin non può accettare questa raccomandazione.",
+        "recommendation-pending": "Invio raccomandazione...",
+        "recommendation-protocol-error": "Il servizio ha ritornato una risposta inaspettata. La tua raccomandazione precedente è invariata.",
+        "recommendation-rate-limited": "Troppe richieste. Aspetta prima di riprovare questo cambiamento.",
+        "recommendation-retry": "Riprova cambiamento raccomandazione",
+        "recommendation-state-error": "Lo stato delle raccomandazioni non può essere letto o salvato. Controlla state.toml prima di riprovare.",
+        "recommendation-unavailable": "Raccomandazioni temporaneamente non disponibili. Le tue precedenti raccomandazioni sono invariate. Puoi riprovare fra poco.",
+        "remove-recommendation": "Rimuovi raccomandazione",
         "results-count": "{count} plugin",
         "search-placeholder": "Ricerca plugin...",
         "sort-added-at-asc": "Ordina per data di aggiunta (prima il più vecchio)",
         "sort-added-at-desc": "Ordina per data di aggiunta (prima il più recente)",
+        "sort-most-recommended": "Più raccomandati",
         "sort-name-asc": "Ordina per nome (A-Z)",
         "sort-name-desc": "Ordina per nome (Z-A)",
+        "sort-trending": "Popolare",
         "sort-updated-at-asc": "Ordina per data di aggiornamento (prima il più vecchio)",
         "sort-updated-at-desc": "Ordina per data di aggiornamento (prima il più recente)",
         "source-all": "Tutte le sorgenti",
@@ -1974,6 +2001,10 @@
         "show-on-workspace-switch": {
           "description": "Mostra brevemente la barra quando l'area di lavoro attiva cambia",
           "label": "Mostra al cambio area di lavoro"
+        },
+        "show-tooltip": {
+          "description": "Mostra i tooltip al passaggio del mouse per i widget su questa barra; l'impostazione Mostra tooltip del widget stesso ha la precedenza su questa",
+          "label": "Mostra suggerimenti"
         },
         "start-widgets": {
           "description": "Widget sul lato iniziale (sinistra/alto) della barra",
@@ -2349,6 +2380,10 @@
           "description": "Sblocco con un lettore di impronte digitali tramite fprintd, insieme alla password",
           "label": "Sblocco con impronta"
         },
+        "grace-period": {
+          "description": "Permetti lo sblocco senza password per questa quantità di secondi dopo il blocco; qualsiasi tasto o movimento del mouse lo sblocca. Imposta a 0 per richiedere sempre la password",
+          "label": "Periodo di grazia"
+        },
         "lock-before-suspend": {
           "description": "Blocca la sessione prima della sospensione (chiudi il coperchio, sospendi systemctl, iberna); Le azioni Blocca e Sospendi si bloccano comunque per prime",
           "label": "Blocca prima della sospensione"
@@ -2478,6 +2513,14 @@
         }
       },
       "panels": {
+        "border-color": {
+          "description": "Colore contorno per pannelli flottanti; un nome di un ruolo di un tema segue il tema attivo, o scegli un colore personalizzato",
+          "label": "Colore Bordo"
+        },
+        "border-width": {
+          "description": "Dimensione contorno per pannelli flottanti in pixel, 0 nasconde il contorno",
+          "label": "Dimensione Bordo"
+        },
         "borders": {
           "description": "Disegna un contorno sui pannelli mobili",
           "label": "Bordi"
@@ -2522,10 +2565,6 @@
           "description": "Mostra le voci delle azioni accanto alle applicazioni nei risultati",
           "label": "Mostra azioni app"
         },
-        "launcher-app-grid": {
-          "description": "Mostra una griglia di icone delle applicazioni con le etichette sottostanti quando i risultati riguardano solo le app",
-          "label": "Vista app a griglia"
-        },
         "launcher-app-origin-indicator": {
           "description": "Mostra l'origine dei pacchetti nei risultati",
           "label": "Mostra origine app"
@@ -2569,6 +2608,10 @@
         "launcher-global-windows": {
           "description": "Mostra anche le finestre aperte nei risultati senza prefisso",
           "label": "Finestre nella ricerca globale"
+        },
+        "launcher-grid": {
+          "description": "Mostra una griglia di icone delle applicazioni con le etichette sottostanti quando i risultati riguardano solo le app",
+          "label": "Vista app a griglia"
         },
         "launcher-ignored-panels": {
           "description": "Pannelli che il provider pannello non elenca mai (ad esempio, richieste di autenticazione, procedura guidata di configurazione)",
@@ -2705,6 +2748,10 @@
         "transparency-mode": {
           "description": "Stile vetro del pannello, incluse opacità dei pannelli flottanti e traslucenza delle schede",
           "label": "Trasparenza"
+        },
+        "wallpaper-show-names": {
+          "description": "Aggiungi a ciascuna miniatura la didascalia con il nome del file nello strumento di selezione dello sfondo.",
+          "label": "Mostra i nomi dei file"
         }
       },
       "power": {
@@ -2748,6 +2795,14 @@
           "description-opening": "Le credenziali del calendario vengono aperte tramite Secret Service",
           "description-unavailable": "Nessun provider di Secret Service è disponibile in questa sessione",
           "label": "Archiviazione delle credenziali del calendario"
+        },
+        "calendar-dedupe-events": {
+          "description": "Raggruppa in un'unica voce gli eventi che compaiono in più di un calendario",
+          "label": "Unisci eventi duplicati"
+        },
+        "calendar-dedupe-ignore-patterns": {
+          "description": "Le espressioni regolari vengono rimosse dal titolo di un evento prima del confronto, in modo che i titoli che differiscono solo per una parte corrispondente vengano comunque uniti",
+          "label": "Ignora nel titolo durante l'unione"
         },
         "calendar-digest-time": {
           "description": "Orario per la visualizzazione di una singola notifica con l'elenco degli eventi che si verificano durante la giornata. Lasciare vuoto per disattivare la notifica.",
@@ -2857,8 +2912,20 @@
           "label": "Suono notifica",
           "placeholder": "/percorso/al/suono.wav"
         },
+        "notification-sounds": {
+          "description": "Riproduci un suono all'arrivo delle notifiche",
+          "label": "Suoni notifiche"
+        },
+        "power-sounds": {
+          "description": "Riproduci un suono quando il caricabatterie si collega o si scollega",
+          "label": "Suoni collegamento energia"
+        },
+        "screenshot-sounds": {
+          "description": "Riproduci un suono alla cattura dello screenshot",
+          "label": "Suoni screenshot"
+        },
         "shell-sounds": {
-          "description": "Riproduci effetti sonori per gli eventi della shell",
+          "description": "Interruttore generale per gli effetti sonori della shell",
           "label": "Suoni shell"
         },
         "sound-theme": {
@@ -2931,6 +2998,10 @@
           "description": "File audio usato per il feedback del volume",
           "label": "Suono cambio volume",
           "placeholder": "/percorso/al/suono.wav"
+        },
+        "volume-sounds": {
+          "description": "Riproduci un suono quando cambia il volume di uscita o di ingresso.",
+          "label": "Suono volume"
         },
         "weather": {
           "description": "Abilita il servizio meteo via open-meteo.com",
@@ -4280,6 +4351,10 @@
           "description": "ID elementi vassoio da nascondere",
           "label": "Elementi nascosti"
         },
+        "hidden-workspaces": {
+          "description": "Nomi di spazi di lavori le quali finestre sono lasciate fuori la taskbar a meno che quello spazio di lavoro è attivo",
+          "label": "Spazi di lavoro nascosti"
+        },
         "hide-album-art": {
           "description": "Nasconde la copertina dell'album",
           "label": "Nascondi copertina album"
@@ -4312,6 +4387,10 @@
         "hide-when-full": {
           "description": "Nasconde il widget batteria quando è completamente carica",
           "label": "Nascondi quando piena"
+        },
+        "hide-when-idle": {
+          "description": "Nascondi il widget quando il lettore MPRIS attivo è in pausa o arrestato",
+          "label": "Nascondi quando inattivo"
         },
         "hide-when-inactive": {
           "description": "Nascondi il widget del microfono quando nessuna applicazione sta catturando l'audio",
@@ -4573,8 +4652,8 @@
           "label": "Mostra temperatura"
         },
         "show-tooltip": {
-          "description": "Mostra il nome completo di un'area di lavoro al passaggio del mouse quando il suo riquadro non lo visualizza già",
-          "label": "Mostra nome nel suggerimento"
+          "description": "Mostra il tooltip di questo widget al passaggio del mouse.",
+          "label": "Mostra suggerimento"
         },
         "show-unlock-hint": {
           "description": "Mostra la scheda di stato sopra la casella di accesso per avvisi di sblocco e prompt di autenticazione; errori e avviso di capslock attivo verranno comunque visualizzati quando questo è disattivato",

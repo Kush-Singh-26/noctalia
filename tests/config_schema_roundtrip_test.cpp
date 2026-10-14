@@ -198,6 +198,7 @@ location = "https://example.invalid/bad"
     bar.position = "bottom";
     bar.enabled = false;
     bar.autoHide = true;
+    bar.autoHideDelayMs = 300000;
     bar.smartAutoHide = false;
     bar.showOnWorkspaceSwitch = true;
     bar.reserveSpace = false;
@@ -273,6 +274,7 @@ location = "https://example.invalid/bad"
     ovr.position = "top";
     ovr.enabled = true;
     ovr.autoHide = false;
+    ovr.autoHideDelayMs = 5000;
     ovr.smartAutoHide = false;
     ovr.showOnWorkspaceSwitch = true;
     ovr.reserveSpace = true;
@@ -510,6 +512,7 @@ location = "https://example.invalid/bad"
     };
     c.accessibility.uiScale = 1.25F;
     c.shell.buttonBorders = false;
+    c.shell.showCloseButtons = false;
     c.shell.fontFamily = "Inter";
     c.shell.lang = "en_US";
     c.shell.timeFormat = "{:%H:%M:%S}";
@@ -526,7 +529,16 @@ location = "https://example.invalid/bad"
     c.shell.panel.transparencyMode = PanelTransparencyMode::Glass;
     c.shell.panel.floatingLayer = "top";
     c.shell.panel.launcherPlacement = PanelPlacement::Floating;
+    c.shell.launcher.layout = ShellConfig::LauncherLayout::Simple;
+    c.shell.launcher.width = 680;
+    c.shell.launcher.searchPosition = ShellConfig::LauncherSearchPosition::Bottom;
+    c.shell.launcher.defaultView = ShellConfig::LauncherDefaultView::Categories;
+    c.shell.launcher.categories = false;
+    c.shell.launcher.categoryIconsOnly = true;
+    c.shell.launcher.showSettingsButton = false;
+    c.shell.launcher.showSessionButton = false;
     c.shell.launcher.compact = true;
+    c.shell.launcher.trackUsage = false;
     c.shell.launcher.sortByUsage = false;
     DmenuEntryConfig notifyDmenu;
     notifyDmenu.id = "notify";
@@ -553,6 +565,7 @@ location = "https://example.invalid/bad"
     c.shell.screenshot.pipeToCommand = true;
     c.shell.screenshot.skipAnnotateOnCopySave = true;
     c.shell.screenshot.closeOnSave = false; // non-default (default is true) so the round-trip exercises it
+    c.shell.screenshot.regionModifier = ScreenshotRegionModifier::Super;
     c.shell.session.actions = {
         SessionPanelActionConfig{
             "lock",
@@ -1120,6 +1133,7 @@ int main() {
 
 [default]
 auto_hide = true
+auto_hide_delay_ms = 300000
 background_opacity = 0.85000002384185791
 border = "#123456"
 border_width = 2.0
@@ -1181,6 +1195,7 @@ widget_spacing = 8
 
     [default.monitor.DP-1]
     auto_hide = false
+    auto_hide_delay_ms = 5000
     background_opacity = 0.69999998807907104
     border = "#A1A2A3"
     border_width = 3.0

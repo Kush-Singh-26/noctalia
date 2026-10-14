@@ -291,6 +291,10 @@ namespace {
     static_cast<WaylandConnection*>(data)->onOutputHeadScale(head, wl_fixed_to_double(scale));
   }
 
+  void outputHeadTransform(void* data, zwlr_output_head_v1* head, int32_t transform) {
+    static_cast<WaylandConnection*>(data)->onOutputHeadTransform(head, transform);
+  }
+
   // libwayland aborts on an event with a null listener slot, even one we don't need.
   const zwlr_output_head_v1_listener kOutputHeadListener = {
       .name = outputHeadName,
@@ -300,7 +304,7 @@ namespace {
       .enabled = [](void*, zwlr_output_head_v1*, int32_t) {},
       .current_mode = [](void*, zwlr_output_head_v1*, zwlr_output_mode_v1*) {},
       .position = [](void*, zwlr_output_head_v1*, int32_t, int32_t) {},
-      .transform = [](void*, zwlr_output_head_v1*, int32_t) {},
+      .transform = outputHeadTransform,
       .scale = outputHeadScale,
       .finished = outputHeadFinished,
       .make = outputHeadMake,
@@ -1142,18 +1146,6 @@ void WaylandConnection::activateSurface(wl_surface* surface) {
   }
 }
 
-void WaylandConnection::activateToplevelForAppId(std::string_view appId) {
-  if (!hasForeignToplevelManager() || appId.empty()) {
-    return;
-  }
-  const std::string idLower = StringUtils::toLower(std::string(appId));
-  const auto windows = windowsForApp(idLower, idLower);
-  if (windows.empty()) {
-    return;
-  }
-  activateToplevel(windows.back().handle);
-}
-
 wl_display* WaylandConnection::display() const noexcept { return m_display; }
 
 std::string WaylandConnection::describeDisplayError(int operationErrno) const {
@@ -1266,6 +1258,13 @@ void WaylandConnection::onOutputHeadScale(zwlr_output_head_v1* head, double scal
   }
 }
 
+void WaylandConnection::onOutputHeadTransform(zwlr_output_head_v1* head, std::int32_t transform) {
+  auto it = m_outputHeads.find(head);
+  if (it != m_outputHeads.end()) {
+    it->second.transform = transform;
+  }
+}
+
 void WaylandConnection::onOutputHeadMode(zwlr_output_head_v1* /*head*/, zwlr_output_mode_v1* mode) {
   if (mode == nullptr) {
     return;
@@ -1307,6 +1306,10 @@ void WaylandConnection::matchPendingOutputHeads() {
       changed = true;
     }
     it->headScaleFactor = info.scaleFactor;
+    if (it->headTransform != info.transform) {
+      it->headTransform = info.transform;
+      changed = true;
+    }
     if (recomputeConfiguredScale(*it)) {
       changed = true;
     }

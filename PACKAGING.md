@@ -39,7 +39,7 @@ check, but it only covers repositories it indexes (and may still list v4 as
 | Homepage | https://github.com/noctalia-dev/noctalia |
 | Docs | https://docs.noctalia.dev |
 | License | MIT ([LICENSE](LICENSE)); also see vendored licenses under `third_party/` for SPDX completeness |
-| Version | Meson `project(... version: ...)` in [`meson.build`](meson.build) |
+| Version | [`VERSION`](VERSION), read by Meson `project(... version: files('VERSION'))` |
 | Binary | `noctalia` |
 | Desktop entry | `dev.noctalia.Noctalia.desktop` |
 | Icon | `noctalia` (`share/icons/hicolor/scalable/apps/noctalia.svg`) |

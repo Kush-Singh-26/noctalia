@@ -275,6 +275,7 @@
         "connected": "Connected",
         "paired": "Paired"
       },
+      "trust-and-allow": "Trust and allow",
       "unavailable": "Bluetooth service unavailable",
       "unknown-device": "Unknown device",
       "visible": "Discoverable by nearby devices"
@@ -631,6 +632,7 @@
         "show-login-button": "Login Button",
         "show-media": "Media",
         "show-password-hint": "Password Hint",
+        "show-seconds": "Second Hand",
         "show-session-buttons": "Session Buttons",
         "show-unlock-hint": "Unlock Hint",
         "show-vpn-label": "Show VPN Label",
@@ -719,6 +721,34 @@
     }
   },
   "launcher": {
+    "browser": {
+      "actions": {
+        "power": "Power",
+        "settings": "Settings"
+      },
+      "navigation": {
+        "all": "All",
+        "all-apps": "All Apps",
+        "categories": "Categories",
+        "pinned": "Pinned",
+        "providers": "Providers",
+        "recent": "Recent"
+      },
+      "options": {
+        "show-grid": "Show Grid View",
+        "show-list": "Show List View",
+        "sort-by-frequency": "Prioritize Frequent Results",
+        "use-default-order": "Use Default Ordering"
+      },
+      "sections": {
+        "all-apps": "All Apps",
+        "other-apps": "Other Apps",
+        "pinned": "Pinned",
+        "providers": "Providers",
+        "recent": "Recent",
+        "search-results": "Search Results"
+      }
+    },
     "categories": {
       "all": "All",
       "applications": {
@@ -1553,7 +1583,30 @@
         "top-left": "Top Left",
         "top-right": "Top Right"
       },
+      "screenshot": {
+        "region-modifier": {
+          "alt": "Alt",
+          "ctrl": "Ctrl",
+          "none": "None",
+          "shift": "Shift",
+          "super": "Super"
+        }
+      },
       "shell": {
+        "launcher-default-view": {
+          "all": "All",
+          "categories": "Categories",
+          "pinned": "Pinned",
+          "recent": "Recent"
+        },
+        "launcher-layout": {
+          "full": "Full",
+          "simple": "Simple"
+        },
+        "launcher-search-position": {
+          "bottom": "Bottom",
+          "top": "Top"
+        },
         "panel-placement": {
           "attached": "Attached",
           "floating": "Floating"
@@ -1715,27 +1768,27 @@
         "installed": "Installed",
         "loading": "Loading catalog…",
         "no-readme": "No description available.",
+        "not-listed": "Not listed",
         "open-page": "Open plugin page on noctalia.dev",
         "open-source": "Open plugin source repository",
+        "recommend": "Recommend",
+        "recommendation-error": "The change was not confirmed. Your previous recommendation is unchanged. Retry the same change to reconcile it.",
+        "recommendation-not-recommendable": "This plugin cannot accept this recommendation.",
+        "recommendation-pending": "Sending recommendation…",
+        "recommendation-protocol-error": "The service returned an unexpected response. Your previous recommendation is unchanged.",
+        "recommendation-rate-limited": "Too many requests. Wait before retrying this change.",
+        "recommendation-retry": "Retry recommendation change",
+        "recommendation-state-error": "Recommendation state could not be read or saved. Check state.toml before retrying.",
+        "recommendation-unavailable": "Recommendations are temporarily unavailable. Your previous recommendation is unchanged. You can retry shortly.",
+        "remove-recommendation": "Remove recommendation",
         "results-count": "{count} plugins",
         "search-placeholder": "Search plugins…",
         "sort-added-at-asc": "Sort by date added (oldest first)",
         "sort-added-at-desc": "Sort by date added (newest first)",
         "sort-most-recommended": "Most recommended",
-        "sort-trending": "Trending",
-        "recommend": "Recommend",
-        "remove-recommendation": "Remove recommendation",
-        "not-listed": "Not listed",
-        "recommendation-pending": "Sending recommendation…",
-        "recommendation-retry": "Retry recommendation change",
-        "recommendation-protocol-error": "The service returned an unexpected response. Your previous recommendation is unchanged.",
-        "recommendation-error": "The change was not confirmed. Your previous recommendation is unchanged. Retry the same change to reconcile it.",
-        "recommendation-not-recommendable": "This plugin cannot accept this recommendation.",
-        "recommendation-rate-limited": "Too many requests. Wait before retrying this change.",
-        "recommendation-state-error": "Recommendation state could not be read or saved. Check state.toml before retrying.",
-        "recommendation-unavailable": "Recommendations are temporarily unavailable. Your previous recommendation is unchanged. You can retry shortly.",
         "sort-name-asc": "Sort by name (A-Z)",
         "sort-name-desc": "Sort by name (Z-A)",
+        "sort-trending": "Trending",
         "sort-updated-at-asc": "Sort by date updated (oldest first)",
         "sort-updated-at-desc": "Sort by date updated (newest first)",
         "source-all": "All sources",
@@ -1835,6 +1888,10 @@
           "description": "Pin Noctalia's own light or dark mode; Follow keeps it in sync with Theme Mode",
           "label": "Shell Theme Mode"
         },
+        "show-close-buttons": {
+          "description": "Show close buttons on panels, notification toasts, popups, dialogs, and the settings window",
+          "label": "Show Close Buttons"
+        },
         "theme-mode": {
           "description": "Choose Dark, Light, or Auto based on time of day; also applies to apps through templates",
           "label": "Theme Mode"
@@ -1864,6 +1921,10 @@
       "bar": {
         "auto-hide": {
           "description": "Off keeps the bar visible; On hides it until you move the pointer to the screen edge; Smart shows the bar on an empty workspace and hides it when windows are open"
+        },
+        "auto-hide-delay": {
+          "description": "Wait this many milliseconds after the pointer leaves before hiding the bar; 0 hides immediately (On mode only)",
+          "label": "Auto-Hide Delay"
         },
         "background-opacity": {
           "description": "Background opacity of the bar"
@@ -2513,10 +2574,6 @@
         }
       },
       "panels": {
-        "borders": {
-          "description": "Draw an outline on floating panels",
-          "label": "Borders"
-        },
         "border-color": {
           "description": "Outline color for floating panels; a theme role name follows the active theme, or pick a custom color",
           "label": "Border Color"
@@ -2524,6 +2581,10 @@
         "border-width": {
           "description": "Outline width for floating panels in pixels, 0 hides the stroke",
           "label": "Border Width"
+        },
+        "borders": {
+          "description": "Draw an outline on floating panels",
+          "label": "Borders"
         },
         "control-center-sidebar": {
           "description": "Choose how to display the sidebar",
@@ -2565,10 +2626,6 @@
           "description": "Show application action entries alongside applications in results",
           "label": "Show App Actions"
         },
-        "launcher-app-grid": {
-          "description": "Show a grid of application icons with labels underneath when results are apps only",
-          "label": "App Grid View"
-        },
         "launcher-app-origin-indicator": {
           "description": "Show package origin indicators on application results",
           "label": "Show App Origin Indicators"
@@ -2578,8 +2635,12 @@
           "label": "Auto-Paste"
         },
         "launcher-categories": {
-          "description": "Display category filters in the launcher; reveal with F6, then cycle with F6 and Shift+F6",
+          "description": "Show the All, Recently Used, and category chips under the search field",
           "label": "Show Categories"
+        },
+        "launcher-category-icons-only": {
+          "description": "Show only icons for app categories, with full names in hover tooltips",
+          "label": "Category Icons Only"
         },
         "launcher-compact": {
           "description": "Use smaller icons and tighter result rows",
@@ -2588,6 +2649,10 @@
         "launcher-currency-exchange": {
           "description": "Fetch rates from third party online sources",
           "label": "Currency Exchange Conversion"
+        },
+        "launcher-default-view": {
+          "description": "Choose the view shown when the launcher opens without a search",
+          "label": "Default View"
         },
         "launcher-global-calculator": {
           "description": "Also show calculator results in unprefixed search",
@@ -2613,12 +2678,20 @@
           "description": "Also show open windows in unprefixed search",
           "label": "Windows in Global Search"
         },
+        "launcher-grid": {
+          "description": "Show results and the provider overview as an icon grid instead of rows",
+          "label": "Grid View"
+        },
         "launcher-ignored-panels": {
           "description": "Panels the panel provider never lists (e.g. authentication prompts, the setup wizard)",
           "label": "Panels Ignored"
         },
+        "launcher-layout": {
+          "description": "Full adds view tabs and a toolbar with your profile and shortcuts; Simple shows a search field, optional category chips, and results",
+          "label": "Layout"
+        },
         "launcher-pinned-apps": {
-          "description": "Desktop entry IDs of apps pinned to the launcher; they appear first when the launcher opens",
+          "description": "Desktop entry IDs shown in manual order in the Pinned view",
           "label": "Pinned Apps"
         },
         "launcher-prefix-calculator": {
@@ -2651,8 +2724,12 @@
         },
         "launcher-reset-usage": {
           "button": "Reset",
-          "description": "Clear launch counts and recently used history used for launcher sorting",
+          "description": "Clear launcher history used by Recent and usage-based sorting",
           "label": "Reset Usage Data"
+        },
+        "launcher-search-position": {
+          "description": "Place the launcher toolbar at the top or bottom",
+          "label": "Toolbar Position"
         },
         "launcher-session-search": {
           "description": "Include session actions (lock, suspend, reboot, shutdown, logout) in general launcher searches, not only behind the /session prefix",
@@ -2662,9 +2739,25 @@
           "description": "Show application icons in launcher results",
           "label": "Show App Icons"
         },
+        "launcher-show-session-button": {
+          "description": "Show a shortcut to the configured session actions",
+          "label": "Show Session Button"
+        },
+        "launcher-show-settings-button": {
+          "description": "Show a shortcut to Noctalia Settings",
+          "label": "Show Settings Button"
+        },
         "launcher-sort-by-usage": {
-          "description": "Boost frequently used apps toward the top and show a Recently Used category filter",
+          "description": "Prioritize frequently used results in normal browsing and search",
           "label": "Sort by Usage"
+        },
+        "launcher-track-usage": {
+          "description": "Record launcher history for Recent and usage-based sorting",
+          "label": "Track Usage"
+        },
+        "launcher-width": {
+          "description": "Set the launcher panel width",
+          "label": "Launcher Width"
         },
         "list-item-background": {
           "description": "Draw a rounded background behind each launcher and clipboard list item",
@@ -3353,6 +3446,10 @@
         "screenshot-pipe-to-command": {
           "description": "Send the captured PNG to a shell command on stdin",
           "label": "Pipe to Command"
+        },
+        "screenshot-region-modifier": {
+          "description": "Modifier to move or resize a selected region: left-drag to move, right-drag to resize from the outer thirds (corners resize both axes). None (default) keeps the plain drag-to-adjust behavior",
+          "label": "Move/Resize Modifier"
         },
         "screenshot-remember-last-region": {
           "description": "Pre-select the last region (including after cancel) on the next region screenshot",
@@ -4351,13 +4448,13 @@
           "description": "Tray item IDs to hide",
           "label": "Hidden Items"
         },
-        "hide-album-art": {
-          "description": "Hide the album artwork",
-          "label": "Hide Album Art"
-        },
         "hidden-workspaces": {
           "description": "Workspace names whose windows are left out of the taskbar unless that workspace is active",
           "label": "Hidden Workspaces"
+        },
+        "hide-album-art": {
+          "description": "Hide the album artwork",
+          "label": "Hide Album Art"
         },
         "hide-artist": {
           "description": "Hide the artist name and only show the track title",

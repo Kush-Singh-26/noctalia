@@ -213,6 +213,7 @@ std::unique_ptr<DesktopWidget> DesktopWidgetFactory::create(
         .color = getColorSpecSetting(settings, "color", colorSpecFromRole(ColorRole::OnSurface)),
         .shadow = getBoolSetting(settings, "shadow", true),
         .showCircle = getBoolSetting(settings, "circle", true),
+        .showSeconds = getBoolSetting(settings, "show_seconds", true),
         .centerText = getBoolSetting(settings, "center_text", true),
         .timezone = getStringSetting(settings, "timezone", ""),
     });

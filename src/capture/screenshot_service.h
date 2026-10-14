@@ -67,6 +67,8 @@ public:
 
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event);
   [[nodiscard]] bool onKeyboardEvent(const KeyboardEvent& event);
+  // Seat modifier change; refreshes the gesture cursor without pointer motion.
+  void onModifiersChanged();
 
   [[nodiscard]] static OutputOptions outputOptionsFromConfig(const Config& config);
 

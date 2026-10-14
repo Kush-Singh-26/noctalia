@@ -2101,10 +2101,6 @@
           "description": "Escolle ata seis botóns de atallo para a pestana de inicio",
           "label": "Atallos de inicio"
         },
-        "launcher-app-grid": {
-          "description": "Mostra unha cadrícula de iconas de aplicacións con etiquetas debaixo cando os resultados son só aplicacións",
-          "label": "Vista en cadrícula de aplicacións"
-        },
         "launcher-categories": {
           "description": "Mostra filtros de categoría no Launcher; móstraos con F6 e logo percorre con F6 e Shift+F6",
           "label": "Mostrar categorías"
@@ -2112,6 +2108,10 @@
         "launcher-compact": {
           "description": "Usa iconas máis pequenas e filas de resultados máis compactas",
           "label": "Filas compactas"
+        },
+        "launcher-grid": {
+          "description": "Mostra unha cadrícula de iconas de aplicacións con etiquetas debaixo cando os resultados son só aplicacións",
+          "label": "Vista en cadrícula de aplicacións"
         },
         "launcher-reset-usage": {
           "button": "Restablecer",

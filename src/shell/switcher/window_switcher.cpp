@@ -1741,6 +1741,20 @@ void WindowSwitcher::buildScene(Instance& instance, std::uint32_t width, std::ui
     (void)onKeyboardEvent(event);
   });
 
+  input->setOnAxisHandler([this](const InputArea::PointerData& data) -> bool {
+    if (data.axis != WL_POINTER_AXIS_VERTICAL_SCROLL && data.axis != WL_POINTER_AXIS_HORIZONTAL_SCROLL) {
+      return false;
+    }
+
+    const float steps = data.scrollSteps();
+    if (steps == 0.0F) {
+      return false;
+    }
+
+    cycleSelection(steps > 0.0F ? 1 : -1);
+    return true;
+  });
+
   const WindowSwitcherStyleLayout& layout = instance.styleLayout;
 
   input->addChild(

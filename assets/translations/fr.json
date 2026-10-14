@@ -2257,10 +2257,6 @@
           "description": "Définit jusqu’à six boutons de raccourci pour l’onglet d'accueil",
           "label": "Raccourcis de l’accueil"
         },
-        "launcher-app-grid": {
-          "description": "Afficher une grille d'icônes d'applications avec les labels dessous lorsque les résultats sont uniquement des apps",
-          "label": "Vue en grille des applications"
-        },
         "launcher-categories": {
           "description": "Affiche les filtres de catégories dans le lanceur ; affichez-les avec F6, puis parcourez-les avec F6 et Maj+F6",
           "label": "Afficher les catégories"
@@ -2271,6 +2267,10 @@
         },
         "launcher-global-calculator": {
           "description": "Afficher aussi les résultats de la calculatrice dans la recherche sans préfixe"
+        },
+        "launcher-grid": {
+          "description": "Afficher une grille d'icônes d'applications avec les labels dessous lorsque les résultats sont uniquement des apps",
+          "label": "Vue en grille des applications"
         },
         "launcher-prefix-calculator": {
           "label": "Préfixe de la calculatrice"

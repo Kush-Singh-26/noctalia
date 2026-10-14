@@ -2381,10 +2381,6 @@
         "launcher-app-actions": {
           "label": "앱 작업 표시"
         },
-        "launcher-app-grid": {
-          "description": "결과가 앱만 있을 때 레이블이 있는 앱 아이콘 그리드 표시",
-          "label": "앱 그리드 보기"
-        },
         "launcher-auto-paste": {
           "description": "계산기, 이모지 등 복사 활성화 후 포커스된 창에 자동 붙여넣기 (클립보드 자동 붙여넣기와 동일한 단축키)",
           "label": "자동 붙여넣기"
@@ -2420,6 +2416,10 @@
         "launcher-global-windows": {
           "description": "접두사 없는 검색에서도 열린 창 표시",
           "label": "전체 검색에서 창"
+        },
+        "launcher-grid": {
+          "description": "결과가 앱만 있을 때 레이블이 있는 앱 아이콘 그리드 표시",
+          "label": "앱 그리드 보기"
         },
         "launcher-pinned-apps": {
           "label": "고정된 앱"

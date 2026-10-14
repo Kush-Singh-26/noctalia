@@ -68,6 +68,7 @@ struct BarMonitorOverride {
   std::optional<std::string> position;
   std::optional<bool> enabled;
   std::optional<bool> autoHide;
+  std::optional<std::int32_t> autoHideDelayMs;
   std::optional<bool> smartAutoHide;
   std::optional<bool> showOnWorkspaceSwitch;
   std::optional<bool> reserveSpace;
@@ -137,6 +138,7 @@ struct BarConfig {
   std::string position = "top";
   bool enabled = true;
   bool autoHide = false;             // slide out when the pointer leaves; reveal on edge approach
+  std::int32_t autoHideDelayMs = 0;  // wait after pointer leaves before hiding; 0 hides immediately
   bool smartAutoHide = false;        // hide while the active workspace has windows; show when it is empty
   bool showOnWorkspaceSwitch = true; // with auto_hide: briefly reveal when the active workspace changes
 
@@ -1046,6 +1048,23 @@ struct LauncherProviderConfig {
   bool operator==(const LauncherProviderConfig&) const = default;
 };
 
+// Modifier that must be held to move/resize an already selected capture region.
+enum class ScreenshotRegionModifier : std::uint8_t {
+  None = 0,
+  Super = 1,
+  Ctrl = 2,
+  Alt = 3,
+  Shift = 4,
+};
+
+constexpr EnumOption<ScreenshotRegionModifier> kScreenshotRegionModifiers[] = {
+    {ScreenshotRegionModifier::None, "none", "settings.options.screenshot.region-modifier.none"},
+    {ScreenshotRegionModifier::Super, "super", "settings.options.screenshot.region-modifier.super"},
+    {ScreenshotRegionModifier::Ctrl, "ctrl", "settings.options.screenshot.region-modifier.ctrl"},
+    {ScreenshotRegionModifier::Alt, "alt", "settings.options.screenshot.region-modifier.alt"},
+    {ScreenshotRegionModifier::Shift, "shift", "settings.options.screenshot.region-modifier.shift"},
+};
+
 struct ShellConfig {
   struct AnimationConfig {
     bool enabled = true;
@@ -1097,15 +1116,60 @@ struct ShellConfig {
   // Launcher behavior/appearance. Panel placement for the launcher surface stays
   // under [shell.panel] (launcher_placement/position/open_near_click_launcher),
   // parallel to every other surface.
+  enum class LauncherSearchPosition : std::uint8_t {
+    Top = 0,
+    Bottom = 1,
+  };
+
+  static constexpr EnumOption<LauncherSearchPosition> kLauncherSearchPositions[] = {
+      {LauncherSearchPosition::Top, "top", "settings.options.shell.launcher-search-position.top"},
+      {LauncherSearchPosition::Bottom, "bottom", "settings.options.shell.launcher-search-position.bottom"},
+  };
+
+  enum class LauncherLayout : std::uint8_t {
+    Full = 0,
+    Simple = 1,
+  };
+
+  static constexpr EnumOption<LauncherLayout> kLauncherLayouts[] = {
+      {LauncherLayout::Full, "full", "settings.options.shell.launcher-layout.full"},
+      {LauncherLayout::Simple, "simple", "settings.options.shell.launcher-layout.simple"},
+  };
+
+  enum class LauncherDefaultView : std::uint8_t {
+    Recent = 0,
+    Pinned = 1,
+    All = 2,
+    Categories = 3,
+  };
+
+  static constexpr EnumOption<LauncherDefaultView> kLauncherDefaultViews[] = {
+      {LauncherDefaultView::Recent, "recent", "settings.options.shell.launcher-default-view.recent"},
+      {LauncherDefaultView::Pinned, "pinned", "settings.options.shell.launcher-default-view.pinned"},
+      {LauncherDefaultView::All, "all", "settings.options.shell.launcher-default-view.all"},
+      {LauncherDefaultView::Categories, "categories", "settings.options.shell.launcher-default-view.categories"},
+  };
+
   struct LauncherConfig {
+    static constexpr std::int32_t kDefaultWidth = 760;
+
+    LauncherLayout layout = LauncherLayout::Full;
+    std::int32_t width = kDefaultWidth;
+    LauncherSearchPosition searchPosition = LauncherSearchPosition::Bottom;
+    LauncherDefaultView defaultView = LauncherDefaultView::Recent;
+    // Simple layout only: show the category chip row under the search field.
     bool categories = true;
+    bool categoryIconsOnly = false;
+    bool showSettingsButton = true;
+    bool showSessionButton = true;
     bool showIcons = true;
     bool showAppOriginIndicator = true;
     bool compact = false;
     bool appGrid = false;
     bool showAppActions = false;
+    bool trackUsage = true;
     bool sortByUsage = true;
-    // Desktop entry IDs shown first in the launcher when it opens without a query.
+    // Desktop entry IDs shown in manual order in the Pinned view.
     std::vector<std::string> pinned;
     /// When true, refresh currency exchange rates from libqalculate's online sources.
     bool fetchExchangeRates = true;
@@ -1166,6 +1230,7 @@ struct ShellConfig {
     std::string pipeCommand;
     std::string directory;       // empty = XDG Pictures directory
     std::string filenamePattern; // empty = screenshot_%Y%m%d_%H%M%S
+    ScreenshotRegionModifier regionModifier = ScreenshotRegionModifier::None;
 
     bool operator==(const ScreenshotConfig&) const = default;
   };
@@ -1206,6 +1271,7 @@ struct ShellConfig {
   bool popupBorders = true;
   bool popupShadows = true;
   bool cardBorders = true;
+  bool showCloseButtons = true;
   std::string fontFamily = "sans-serif";
   std::string lang; // empty = auto-detect from $LC_ALL/$LC_MESSAGES/$LANG
   std::string timeFormat = "{:%H:%M}";

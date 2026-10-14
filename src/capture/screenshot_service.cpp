@@ -6,6 +6,7 @@
 #include "config/config_types.h"
 #include "core/deferred_call.h"
 #include "core/input/key_chord.h"
+#include "core/input/key_modifiers.h"
 #include "core/input/keybind_matcher.h"
 #include "core/log.h"
 #include "ipc/ipc_service.h"
@@ -60,6 +61,22 @@ namespace {
       return std::nullopt;
     }
     return value;
+  }
+
+  [[nodiscard]] std::uint32_t regionModifierMask(ScreenshotRegionModifier modifier) {
+    switch (modifier) {
+    case ScreenshotRegionModifier::Super:
+      return KeyMod::Super;
+    case ScreenshotRegionModifier::Ctrl:
+      return KeyMod::Ctrl;
+    case ScreenshotRegionModifier::Alt:
+      return KeyMod::Alt;
+    case ScreenshotRegionModifier::Shift:
+      return KeyMod::Shift;
+    case ScreenshotRegionModifier::None:
+      return 0;
+    }
+    return 0;
   }
 
   [[nodiscard]] std::optional<capture::AnnotationColor> parseAnnotationColor(std::string_view text) {
@@ -687,6 +704,12 @@ bool ScreenshotService::onKeyboardEvent(const KeyboardEvent& event) {
   return true;
 }
 
+void ScreenshotService::onModifiersChanged() {
+  if (m_regionOverlay != nullptr && m_regionOverlay->isActive()) {
+    m_regionOverlay->onModifiersChanged();
+  }
+}
+
 bool ScreenshotService::overlayBusy() const noexcept {
   return (m_regionOverlay != nullptr && m_regionOverlay->isActive())
       || (m_annotationOverlay != nullptr && m_annotationOverlay->isActive())
@@ -931,6 +954,7 @@ void ScreenshotService::ensureRegionOverlay() {
       primaryKeybindLabel(keybinds.copy, KeybindAction::Copy), primaryKeybindLabel(keybinds.save, KeybindAction::Save),
       primaryKeybindLabel(keybinds.cancel, KeybindAction::Cancel)
   );
+  m_regionOverlay->setRegionModifier(regionModifierMask(m_configService.config().shell.screenshot.regionModifier));
   m_regionOverlay->setFailureCallback([this](const std::string& message) {
     m_frozenScreenshots.clear();
     m_regionFullscreenPick = false;

@@ -274,6 +274,9 @@ namespace desktop_settings {
       auto circle = boolSpec("circle", true);
       circle.visibleWhen = analogOnly;
       add(std::move(circle));
+      auto showSeconds = boolSpec("show_seconds", true);
+      showSeconds.visibleWhen = analogOnly;
+      add(std::move(showSeconds));
     } else if (type == "audio_visualizer") {
       add(intSpec("bands", 32, 4.0, 128.0, 4.0));
       add(boolSpec("mirrored", true));
