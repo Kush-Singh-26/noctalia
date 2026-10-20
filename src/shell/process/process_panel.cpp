@@ -25,7 +25,6 @@ namespace {
   constexpr Logger kLog("process-panel");
   constexpr auto kFilterDebounce = std::chrono::milliseconds(150);
   constexpr auto kRefreshInterval = std::chrono::milliseconds(2000);
-  constexpr auto kKillConfirmTimeout = std::chrono::milliseconds(3000);
   constexpr float kRowHeight = 42.0F;
 
   std::string formatMem(std::uint64_t kb) {
@@ -36,7 +35,7 @@ namespace {
 
   class ProcessRow final : public InputArea {
   public:
-    explicit ProcessRow(float scale) : m_scale(scale) {
+    ProcessRow(float scale, std::function<void(pid_t)> onKill) : m_scale(scale), m_onKill(std::move(onKill)) {
       setVisible(false);
       addChild(ui::box({.out = &m_bg, .radius = Style::scaledRadiusMd(scale)}));
       auto row = ui::row({.out = &m_row, .align = FlexAlign::Center, .gap = Style::spaceSm * scale, .paddingV = Style::spaceXs * scale, .paddingH = Style::spaceSm * scale});
@@ -45,11 +44,19 @@ namespace {
       m_row->addChild(ui::label({.out = &m_name, .fontSize = Style::fontSizeBody * scale, .fontWeight = FontWeight::Medium, .maxLines = 1, .flexGrow = 1.0F}));
       m_row->addChild(ui::label({.out = &m_cpu, .fontSize = Style::fontSizeCaption * scale, .minWidth = 55.0F * scale}));
       m_row->addChild(ui::label({.out = &m_mem, .fontSize = Style::fontSizeCaption * scale, .minWidth = 70.0F * scale}));
-      m_row->addChild(ui::button({.out = &m_kill, .glyph = "trash", .glyphSize = Style::fontSizeBody * scale, .variant = ButtonVariant::Destructive, .minWidth = Style::controlHeightSm * scale, .minHeight = Style::controlHeightSm * scale, .padding = Style::spaceXs * scale, .radius = Style::scaledRadiusSm(scale)}));
+      m_row->addChild(ui::button({.out = &m_kill, .glyph = "trash", .glyphSize = Style::fontSizeBody * scale, .variant = ButtonVariant::Destructive, .minWidth = Style::controlHeightSm * scale, .minHeight = Style::controlHeightSm * scale, .padding = Style::spaceXs * scale, .radius = Style::scaledRadiusSm(scale), .onClick = [this]() { invokeKill(); }}));
+      setOnPress([this](const InputArea::PointerData& data) {
+        if (data.pressed && processKillButtonHit(data.localX, data.localY, width(), height(), m_scale)) invokeKill();
+      });
     }
 
-    void bind(Renderer& renderer, const ProcessInfo& info, float w, float h, bool selected, bool hovered, bool pendingKill) {
+    void invokeKill() {
+      if (m_pidValue > 0 && m_onKill) m_onKill(m_pidValue);
+    }
+
+    void bind(Renderer& renderer, const ProcessInfo& info, float w, float h, bool selected, bool hovered) {
       (void)renderer; (void)selected;
+      m_pidValue = info.pid;
       setVisible(true);
       setSize(w, h);
       m_pid->setText(std::to_string(info.pid));
@@ -59,19 +66,8 @@ namespace {
       // color mem/cpu faint
       m_cpu->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
       m_mem->setColor(colorSpecFromRole(ColorRole::OnSurfaceVariant));
-      if (m_kill) {
-        if (pendingKill) {
-          m_kill->setGlyph("warning");
-          m_kill->setVariant(ButtonVariant::Destructive);
-        } else {
-          m_kill->setGlyph("trash");
-          m_kill->setVariant(ButtonVariant::Destructive);
-        }
-        // Disable kill for non-user? We'll keep enabled and let service reject
-      }
       if (m_bg) {
         if (hovered) m_bg->setFill(colorSpecFromRole(ColorRole::Hover));
-        else if (pendingKill) m_bg->setFill(colorSpecFromRole(ColorRole::Error, 0.12F));
         else m_bg->setFill(clearColorSpec());
       }
       layout(renderer);
@@ -85,6 +81,8 @@ namespace {
 
   private:
     float m_scale = 1.0F;
+    std::function<void(pid_t)> m_onKill;
+    pid_t m_pidValue = -1;
     Box* m_bg = nullptr;
     Flex* m_row = nullptr;
     Label* m_pid = nullptr;
@@ -110,19 +108,19 @@ bool processKillButtonHit(float x, float y, float cellWidth, float cellHeight, f
 class ProcessListAdapter final : public VirtualGridAdapter {
 public:
   ProcessListAdapter(float scale, std::function<void(pid_t)> onKill) : m_scale(scale), m_onKill(std::move(onKill)) {}
-  void setProcesses(const std::vector<ProcessInfo>* procs, const std::vector<std::size_t>* indices, pid_t pendingKill) {
-    m_processes = procs; m_indices = indices; m_pendingKill = pendingKill;
+  void setProcesses(const std::vector<ProcessInfo>* procs, const std::vector<std::size_t>* indices) {
+    m_processes = procs; m_indices = indices;
   }
   void setRenderer(Renderer* r) { m_renderer = r; }
   [[nodiscard]] std::size_t itemCount() const override { return m_indices ? m_indices->size() : 0; }
-  [[nodiscard]] std::unique_ptr<Node> createTile() override { return std::make_unique<ProcessRow>(m_scale); }
+  [[nodiscard]] std::unique_ptr<Node> createTile() override { return std::make_unique<ProcessRow>(m_scale, m_onKill); }
   void bindTile(Node& tile, std::size_t index, bool selected, bool hovered) override {
     if (!m_renderer || !m_processes || !m_indices || index >= m_indices->size()) return;
     auto* row = static_cast<ProcessRow*>(&tile);
     const std::size_t procIdx = (*m_indices)[index];
     if (procIdx >= m_processes->size()) return;
     const auto& info = (*m_processes)[procIdx];
-    row->bind(*m_renderer, info, row->width(), row->height(), selected, hovered, info.pid == m_pendingKill);
+    row->bind(*m_renderer, info, row->width(), row->height(), selected, hovered);
   }
   // Tiles cannot receive clicks (the grid overlay owns input), so the trash button is resolved here.
   bool onPointerPress(std::size_t index, float x, float y, float cellWidth, float cellHeight) override {
@@ -156,7 +154,6 @@ private:
   std::function<void(pid_t)> m_onKill;
   const std::vector<ProcessInfo>* m_processes = nullptr;
   const std::vector<std::size_t>* m_indices = nullptr;
-  pid_t m_pendingKill = -1;
   pid_t m_pressedKillPid = -1;
   std::size_t m_pressedKillIndex = kNoIndex;
   Renderer* m_renderer = nullptr;
@@ -191,7 +188,7 @@ void ProcessPanel::create() {
   col->addChild(ui::input({.out = &m_filterInput, .placeholder = "Filter by name...", .fontSize = Style::fontSizeBody * scale, .controlHeight = Style::controlHeight * scale, .horizontalPadding = Style::spaceMd * scale, .clearButtonEnabled = true, .surfaceOpacity = panelCardOpacity(), .onChange = [this](const std::string& t){ onFilterChanged(t); }}));
 
   m_adapter = std::make_unique<ProcessListAdapter>(scale, [this](pid_t pid){ handleKill(pid); });
-  m_adapter->setProcesses(&m_processes, &m_filteredIndices, m_pendingKillPid);
+  m_adapter->setProcesses(&m_processes, &m_filteredIndices);
   col->addChild(ui::virtualGridView({.out = &m_listGrid, .columns = 1, .cellHeight = kRowHeight * scale, .squareCells = false, .columnGap = 0, .rowGap = Style::spaceXs * scale, .overscanRows = 3, .scrollbarVisible = true, .adapter = m_adapter.get(), .flexGrow = 1.0F}));
 
   col->addChild(ui::label({.out = &m_emptyLabel, .text = "No processes", .fontSize = Style::fontSizeBody * scale, .color = colorSpecFromRole(ColorRole::OnSurfaceVariant), .visible = false, .participatesInLayout = false}));
@@ -204,8 +201,6 @@ void ProcessPanel::create() {
 void ProcessPanel::onOpen(std::string_view) {
   m_filter.clear(); m_pendingFilter.clear();
   if (m_filterInput) m_filterInput->setValue("");
-  m_pendingKillPid = -1;
-  m_killConfirmTimer.stop();
   m_filterDebounceTimer.stop();
   refreshProcesses();
   // Auto-refresh every 2s
@@ -215,7 +210,6 @@ void ProcessPanel::onOpen(std::string_view) {
 void ProcessPanel::onClose() {
   m_refreshTimer.stop();
   m_filterDebounceTimer.stop();
-  m_killConfirmTimer.stop();
   m_rootColumn = nullptr; m_headerRow = nullptr; m_titleLabel = nullptr; m_filterInput = nullptr; m_sortToggle = nullptr; m_refreshButton = nullptr; m_listGrid = nullptr; m_emptyLabel = nullptr; m_statusLabel = nullptr; m_focusArea = nullptr;
   m_adapter.reset();
   m_filteredIndices.clear();
@@ -229,7 +223,6 @@ bool ProcessPanel::handleGlobalKey(std::uint32_t sym, std::uint32_t mods, bool p
   (void)mods; (void)preedit;
   if (!pressed) return false;
   if (sym == 65307) { // Escape
-    if (m_pendingKillPid != -1) { m_pendingKillPid = -1; m_killConfirmTimer.stop(); if(m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices,m_pendingKillPid); if(m_listGrid) m_listGrid->notifyDataChanged(); PanelManager::instance().refresh(); return true; }
     PanelManager::instance().close(); return true;
   }
   return false;
@@ -253,7 +246,7 @@ void ProcessPanel::refreshProcesses() {
   if (!m_service) return;
   m_processes = m_service->fetchProcesses();
   applyFilterAndSort();
-  if (m_adapter) m_adapter->setProcesses(&m_processes, &m_filteredIndices, m_pendingKillPid);
+  if (m_adapter) m_adapter->setProcesses(&m_processes, &m_filteredIndices);
   if (m_listGrid) m_listGrid->notifyDataChanged();
   updateStatus();
 }
@@ -283,7 +276,7 @@ void ProcessPanel::onFilterChanged(const std::string& text) {
     if (m_pendingFilter == m_filter) return;
     m_filter = m_pendingFilter;
     applyFilterAndSort();
-    if (m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices,m_pendingKillPid);
+    if (m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices);
     if (m_listGrid) { m_listGrid->notifyDataChanged(); m_listGrid->scrollView().setScrollOffset(0); }
     updateStatus();
     PanelManager::instance().refresh();
@@ -293,33 +286,18 @@ void ProcessPanel::onFilterChanged(const std::string& text) {
 void ProcessPanel::onSortChanged(std::size_t idx) {
   m_sort = (idx == 1 ? ProcessSort::Cpu : ProcessSort::Memory);
   applyFilterAndSort();
-  if (m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices,m_pendingKillPid);
+  if (m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices);
   if (m_listGrid) m_listGrid->notifyDataChanged();
   updateStatus();
   PanelManager::instance().refresh();
 }
 
 void ProcessPanel::handleKill(pid_t pid) {
-  if (m_pendingKillPid != pid) {
-    m_pendingKillPid = pid;
-    m_killConfirmTimer.start(kKillConfirmTimeout, [this](){ m_pendingKillPid = -1; if(m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices,m_pendingKillPid); if(m_listGrid) m_listGrid->notifyDataChanged(); PanelManager::instance().refresh(); });
-    if (m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices,m_pendingKillPid);
-    if (m_listGrid) m_listGrid->notifyDataChanged();
-    PanelManager::instance().refresh();
-    return;
-  }
-  // confirmed
-  m_killConfirmTimer.stop();
-  m_pendingKillPid = -1;
   std::string err;
-  bool ok = m_service ? m_service->killProcess(pid, err) : false;
-  if (!ok) {
+  if (!m_service || !m_service->killProcess(pid, err)) {
     kLog.warn("kill {} failed: {}", pid, err);
   }
-  // refresh soon
   refreshProcesses();
-  if (m_adapter) m_adapter->setProcesses(&m_processes,&m_filteredIndices,m_pendingKillPid);
-  if (m_listGrid) m_listGrid->notifyDataChanged();
   PanelManager::instance().refresh();
 }
 
