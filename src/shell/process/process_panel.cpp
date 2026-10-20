@@ -18,6 +18,8 @@
 #include <cctype>
 #include <cmath>
 #include <format>
+#include <limits>
+#include <optional>
 
 namespace {
   constexpr Logger kLog("process-panel");
@@ -34,7 +36,7 @@ namespace {
 
   class ProcessRow final : public InputArea {
   public:
-    ProcessRow(float scale, std::function<void(pid_t)> onKill) : m_scale(scale), m_onKill(std::move(onKill)) {
+    explicit ProcessRow(float scale) : m_scale(scale) {
       setVisible(false);
       addChild(ui::box({.out = &m_bg, .radius = Style::scaledRadiusMd(scale)}));
       auto row = ui::row({.out = &m_row, .align = FlexAlign::Center, .gap = Style::spaceSm * scale, .paddingV = Style::spaceXs * scale, .paddingH = Style::spaceSm * scale});
@@ -43,12 +45,11 @@ namespace {
       m_row->addChild(ui::label({.out = &m_name, .fontSize = Style::fontSizeBody * scale, .fontWeight = FontWeight::Medium, .maxLines = 1, .flexGrow = 1.0F}));
       m_row->addChild(ui::label({.out = &m_cpu, .fontSize = Style::fontSizeCaption * scale, .minWidth = 55.0F * scale}));
       m_row->addChild(ui::label({.out = &m_mem, .fontSize = Style::fontSizeCaption * scale, .minWidth = 70.0F * scale}));
-      m_row->addChild(ui::button({.out = &m_kill, .glyph = "trash", .glyphSize = Style::fontSizeBody * scale, .variant = ButtonVariant::Destructive, .minWidth = Style::controlHeightSm * scale, .minHeight = Style::controlHeightSm * scale, .padding = Style::spaceXs * scale, .radius = Style::scaledRadiusSm(scale), .onClick = [this]() { if (m_pidValue>0 && m_onKill) m_onKill(m_pidValue); }}));
+      m_row->addChild(ui::button({.out = &m_kill, .glyph = "trash", .glyphSize = Style::fontSizeBody * scale, .variant = ButtonVariant::Destructive, .minWidth = Style::controlHeightSm * scale, .minHeight = Style::controlHeightSm * scale, .padding = Style::spaceXs * scale, .radius = Style::scaledRadiusSm(scale)}));
     }
 
     void bind(Renderer& renderer, const ProcessInfo& info, float w, float h, bool selected, bool hovered, bool pendingKill) {
       (void)renderer; (void)selected;
-      m_pidValue = info.pid;
       setVisible(true);
       setSize(w, h);
       m_pid->setText(std::to_string(info.pid));
@@ -84,8 +85,6 @@ namespace {
 
   private:
     float m_scale = 1.0F;
-    std::function<void(pid_t)> m_onKill;
-    pid_t m_pidValue = -1;
     Box* m_bg = nullptr;
     Flex* m_row = nullptr;
     Label* m_pid = nullptr;
@@ -97,6 +96,17 @@ namespace {
 
 } // namespace
 
+bool processKillButtonHit(float x, float y, float cellWidth, float cellHeight, float scale) {
+  // Mirrors ProcessRow: row padding spaceSm, button controlHeightSm square, vertically centered.
+  const float outset = Style::spaceXs * scale;
+  const float right = cellWidth - Style::spaceSm * scale + outset;
+  const float left = right - Style::controlHeightSm * scale - 2.0F * outset;
+  const float centerY = cellHeight * 0.5F;
+  const float top = centerY - Style::controlHeightSm * scale * 0.5F - outset;
+  const float bottom = centerY + Style::controlHeightSm * scale * 0.5F + outset;
+  return x >= left && x <= right && y >= top && y <= bottom;
+}
+
 class ProcessListAdapter final : public VirtualGridAdapter {
 public:
   ProcessListAdapter(float scale, std::function<void(pid_t)> onKill) : m_scale(scale), m_onKill(std::move(onKill)) {}
@@ -105,7 +115,7 @@ public:
   }
   void setRenderer(Renderer* r) { m_renderer = r; }
   [[nodiscard]] std::size_t itemCount() const override { return m_indices ? m_indices->size() : 0; }
-  [[nodiscard]] std::unique_ptr<Node> createTile() override { return std::make_unique<ProcessRow>(m_scale, m_onKill); }
+  [[nodiscard]] std::unique_ptr<Node> createTile() override { return std::make_unique<ProcessRow>(m_scale); }
   void bindTile(Node& tile, std::size_t index, bool selected, bool hovered) override {
     if (!m_renderer || !m_processes || !m_indices || index >= m_indices->size()) return;
     auto* row = static_cast<ProcessRow*>(&tile);
@@ -114,12 +124,41 @@ public:
     const auto& info = (*m_processes)[procIdx];
     row->bind(*m_renderer, info, row->width(), row->height(), selected, hovered, info.pid == m_pendingKill);
   }
+  // Tiles cannot receive clicks (the grid overlay owns input), so the trash button is resolved here.
+  bool onPointerPress(std::size_t index, float x, float y, float cellWidth, float cellHeight) override {
+    const pid_t pid = pidAt(index);
+    if (pid <= 0 || !processKillButtonHit(x, y, cellWidth, cellHeight, m_scale)) return false;
+    m_pressedKillPid = pid;
+    m_pressedKillIndex = index;
+    return true;
+  }
+  PointerReleaseResult onPointerRelease(std::optional<std::size_t> index) override {
+    const pid_t pid = m_pressedKillPid;
+    const bool sameRow = index.has_value() && *index == m_pressedKillIndex;
+    m_pressedKillPid = -1;
+    m_pressedKillIndex = kNoIndex;
+    if (pid > 0 && sameRow && m_onKill) m_onKill(pid);
+    return {};
+  }
+  void onPointerCancel() override {
+    m_pressedKillPid = -1;
+    m_pressedKillIndex = kNoIndex;
+  }
 private:
+  static constexpr std::size_t kNoIndex = std::numeric_limits<std::size_t>::max();
+  [[nodiscard]] pid_t pidAt(std::size_t index) const {
+    if (!m_processes || !m_indices || index >= m_indices->size()) return -1;
+    const std::size_t procIdx = (*m_indices)[index];
+    if (procIdx >= m_processes->size()) return -1;
+    return (*m_processes)[procIdx].pid;
+  }
   float m_scale = 1.0F;
   std::function<void(pid_t)> m_onKill;
   const std::vector<ProcessInfo>* m_processes = nullptr;
   const std::vector<std::size_t>* m_indices = nullptr;
   pid_t m_pendingKill = -1;
+  pid_t m_pressedKillPid = -1;
+  std::size_t m_pressedKillIndex = kNoIndex;
   Renderer* m_renderer = nullptr;
 };
 

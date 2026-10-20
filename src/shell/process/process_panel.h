@@ -18,6 +18,10 @@ class Segmented;
 class VirtualGridView;
 class ProcessListAdapter;
 
+// VirtualGridView tiles are visual-only (its overlay InputArea owns pointer input), so the
+// per-row trash button is hit-tested here in cell-local coordinates by the adapter hooks.
+[[nodiscard]] bool processKillButtonHit(float x, float y, float cellWidth, float cellHeight, float scale);
+
 class ProcessPanel : public Panel {
 public:
   explicit ProcessPanel(ProcessService* service);

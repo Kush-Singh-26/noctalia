@@ -1270,6 +1270,7 @@ if build_tests
     'notification_internal_history',
     'path_browse',
     'pipewire_error',
+    'process_kill_hit',
     'umbriel_audio_provider',
     'privacy_capture_classification',
     'plugin_bindings',
