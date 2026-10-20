@@ -68,11 +68,9 @@ private:
   ProcessSort m_sort = ProcessSort::Memory;
   std::string m_filter;
   std::string m_pendingFilter;
-  pid_t m_pendingKillPid = -1;
 
   Timer m_refreshTimer;
   Timer m_filterDebounceTimer;
-  Timer m_killConfirmTimer;
 
   float m_lastWidth = 0.0F;
   float m_lastHeight = 0.0F;
