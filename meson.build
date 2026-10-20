@@ -1330,6 +1330,7 @@ if build_tests
     'path_browse',
     'pipewire_error',
     'pipewire_route_cache',
+    'process_kill_hit',
     'umbriel_audio_provider',
     'privacy_capture_classification',
     'plugin_app_icon_path',
